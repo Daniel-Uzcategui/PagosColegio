@@ -1,0 +1,55 @@
+// app global css in Sass form
+
+//
+.border-card {
+  border-width: 2px;
+  border-radius: 8px;
+}
+// aside affects drawer background
+aside {
+  background-color: transparent !important;
+}
+// .apexcharts-inner {
+//   background-color: #ffffff;
+//   opacity: 0.8;
+//   background-image: radial-gradient(#000000 1px, #ffffff 1px);
+//   background-size: 20px 20px;
+// }
+.board-page-background {
+  background-color: #ffffff;
+  opacity: 0.8;
+  background-image: radial-gradient(#000000 1px, #ffffff 1px);
+  background-size: 20px 20px;
+  min-width: 100vw;
+}
+
+.radius {
+  border-radius: 18px !important;
+  -webkit-border-radius: 18px !important;
+  -moz-border-radius: 18px !important;
+  -ms-border-radius: 18px !important;
+  -o-border-radius: 18px !important;
+}
+body {
+  scrollbar-width: thin;
+  scrollbar-color: $primary $secondary;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: $primary $secondary;
+}
+*::-webkit-scrollbar {
+  width: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: $secondary;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: $primary;
+  border-radius: 20px;
+  border: 3px solid $secondary;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 48;
+}

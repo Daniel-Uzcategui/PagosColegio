@@ -1,0 +1,51 @@
+{
+  "name": "Restaurantdev",
+  "version": "0.0.1",
+  "description": "Restaurant consulting",
+  "productName": "Restaurant",
+  "author": "Daniel Uzcategui <44720483+Daniel-Uzcategui@users.noreply.github.com>",
+  "private": true,
+  "scripts": {
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No test specified\" && exit 0",
+    "deploy": "quasar build && firebase deploy --only hosting",
+    "deployAll": "quasar build && firebase deploy --only 'hosting,functions'",
+    "deploy-functions": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.4",
+    "@vitejs/plugin-vue": "^4.0.0",
+    "@vueauth/firebase": "^1.0.0-alpha.20",
+    "axios": "^0.21.1",
+    "firebase": "^9.0.0",
+    "firebase-functions": "^4.2.0",
+    "pinia": "^2.0.11",
+    "pinia-plugin-persistedstate": "^3.1.0",
+    "quasar": "^2.12.2",
+    "stylus": "^0.59.0",
+    "stylus-loader": "^7.1.0",
+    "vue": "^3.0.0",
+    "vue-dndrop": "^1.2.2",
+    "vue-i18n": "^9.0.0",
+    "vue-router": "^4.0.0",
+    "vuefire": "^3.0.0-beta.8"
+  },
+  "devDependencies": {
+    "@intlify/vite-plugin-vue-i18n": "^3.3.1",
+    "@quasar/app-vite": "^1.4.3",
+    "@vueauth/quasar-app-extension-auth": "^1.0.0-alpha.29",
+    "autoprefixer": "^9",
+    "eslint": "^8.10.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "patch-package": "^6.5.1",
+    "prettier": "^2.5.1",
+    "vite-plugin-node-polyfills": "^0.7.0"
+  },
+  "engines": {
+    "node": "^18 || ^16 || ^14.19",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
