@@ -1,5 +1,5 @@
 {
-  "name": "Restaurantdev",
+  "name": "colegio",
   "version": "0.0.1",
   "description": "Restaurant consulting",
   "productName": "Restaurant",
@@ -29,7 +29,8 @@
     "vue-dndrop": "^1.2.2",
     "vue-i18n": "^9.0.0",
     "vue-router": "^4.0.0",
-    "vuefire": "^3.0.0-beta.8"
+    "vuefire": "^3.1.12",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@intlify/vite-plugin-vue-i18n": "^3.3.1",

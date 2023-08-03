@@ -1,7 +1,7 @@
 const routes = [
   {
     path: "/",
-    component: () => import("src/layouts/boardLayout.vue"),
+    component: () => import("src/layouts/MainLayout.vue"),
     children: [
       {
         path: "myboard",
@@ -12,7 +12,7 @@ const routes = [
           invite: route.query.i,
         }),
       },
-      { path: "bubble", component: () => import("pages/bubbleChart.vue") },
+      { path: "cuotas", component: () => import("pages/paymentCuotas.vue") },
     ],
   },
 

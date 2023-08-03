@@ -1,8 +1,8 @@
 <template>
   <q-page>
-    <ordersView/>
+    <studentView/>
   </q-page>
 </template>
 <script setup>
-import ordersView from 'components/orders/ordersView.vue'
+import studentView from 'components/students/studentView.vue'
 </script>
