@@ -28,7 +28,7 @@ export const useUsersStore = defineStore(
       const currentUserRef = computed(() =>
         doc(collection(db, "users"), currentUser.value?.uid || "nadie")
       );
-      const { data: currentUserDoc, promise } = useDocument(currentUserRef);
+      const currentUserDoc  = useDocument(currentUserRef);
       async function registerUser(form) {
         let Doc = {
           id: currentUser.value.uid,

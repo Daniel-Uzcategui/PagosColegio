@@ -1,71 +1,27 @@
 import admin from "firebase-admin";
 import functions from "firebase-functions";
-// // Create and Deploy Your First Cloud Functions
-import corsFactory from "cors";
-import express from "express";
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+admin.initializeApp()
 
-admin.initializeApp();
-// Your web app's Firebase configuration
-const urlAppBase = "https://dev.Restaurant.com/#/";
-const app = express();
-const cors = corsFactory({ origin: true });
-app.use(cors);
-app.get("/api/managelink", async (req, res) => {
-  try {
-    const { u, p, i } = req.query;
-    const path = "users/" + u + "/Projects/" + p + "/invites/";
-    const inviteDoc = await admin.firestore().collection(path).doc(i).get();
-    if (!inviteDoc.exists) {
-      return res.redirect(urlAppBase + "404");
-    }
-    const inviteData = inviteDoc.data();
-    if (inviteData.guest) {
-      return res.redirect(urlAppBase + "myboard?p=" + p + "&u=" + u);
-    }
-    if (inviteData.invite) {
-      return res.redirect(
-        urlAppBase + "myboard?p=" + p + "&u=" + u + "&i=" + i
-      );
-    }
-    res.redirect(urlAppBase + "404");
-  } catch (error) {
-    console.error(error);
+const db = admin.firestore()
+const BATCH_SIZE = 500
+const LAST_SCHOOL_YEAR = 12
+
+export const updateStudents = functions.https.onCall(async (data, context) => {
+  const coll = db.collection('students')
+  let snapshot = await coll.get()
+  while (!snapshot.empty) {
+    const batch = db.batch()
+    snapshot.docs.forEach((doc) => {
+      const student = doc.data()
+      if (student.schoolYear === LAST_SCHOOL_YEAR) {
+        // graduate student
+        batch.update(doc.ref, { status: 'graduated' })
+      } else {
+        // move student up to next school year
+        batch.update(doc.ref, { schoolYear: student.schoolYear + 1 })
+      }
+    })
+    await batch.commit()
+    snapshot = await coll.startAfter(snapshot.docs[snapshot.docs.length - 1]).limit(BATCH_SIZE).get()
   }
-});
-app.get("/api/usememberlink", async (req, res) => {
-  try {
-    const { u, p, i, userId } = req.query;
-    const projectPath = "users/" + u + "/Projects/";
-    const projectDocPath = projectPath + p;
-    const projectRef = admin.firestore().collection(projectPath).doc(p);
-    const invitesPath = projectDocPath + "/invites/";
-    const inviteRef = admin.firestore().collection(invitesPath).doc(i);
-    const inviteDoc = await inviteRef.get();
-    if (!inviteDoc.exists) {
-      return res.redirect(urlAppBase + "404");
-    }
-    const inviteData = inviteDoc.data();
-    if (inviteData.guest) {
-      return res.redirect(urlAppBase + "404");
-    }
-    if (inviteData.invite) {
-      await inviteRef.delete();
-      const userRef = admin.firestore().collection("users").doc(userId);
-      await projectRef.update({
-        ["members." + userId]: userRef,
-        ["roles." + userId]: "Collaborator",
-      });
-      return res.send({ registered: true });
-    }
-    res.redirect(urlAppBase + "404");
-  } catch (error) {
-    console.error(error);
-  }
-});
-export const api = functions.https.onRequest(app);
+})

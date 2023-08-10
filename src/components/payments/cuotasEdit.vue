@@ -34,7 +34,7 @@ const $q = useQuasar()
 const cuotaStore = useCuotaStore()
 const props = defineProps(['modelValue', 'editCuota'])
 const cuotaRef = toRef(props, 'editCuota')
-defineEmits(['update:modelValue'])
+const emits = defineEmits(['update:modelValue', 'updatedOrCreated'])
 const options = ['A', 'B', 'C', 'D']
 const Periodo = ref()
 const Monto = ref()
@@ -72,7 +72,12 @@ async function onSubmit() {
   } catch (error) {
     return $q.notify("Error al crear o editar la cuota")
   }
-  return $q.notify(props.editCuota?.id ? "Cuota Editada" :"Cuota Creada")
+  return afterSubmit()
+}
+function afterSubmit () {
+  $q.notify(props.editCuota?.id ? "Cuota Editada" :"Cuota Creada")
+  emits('update:modelValue')
+  emits('updatedOrCreated')
 }
 watch(cuotaRef, ()=> {
   let cuota = cuotaRef.value
