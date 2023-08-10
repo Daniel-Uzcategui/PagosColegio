@@ -1,51 +1,51 @@
 <template>
-<q-dialog
-:maximized="maximizedToggle"
-transition-show="slide-up"
-transition-hide="slide-down"
-full-width
-full-height
-:model-value="parentHistoryOpen"
->
-<q-table
-flat
-bordered
-ref="tableRef"
-title="Pagos"
-:rows="rows"
-:columns="columns"
-row-key="id"
-v-model:pagination="pagination"
-:loading="serverPagination.loading"
-:filter="filter"
-binary-state-sort
-@request="(e)=> onRequest(e,pagination, serverPagination, rows)"
->
-<template v-slot:top-right> </template>
-<template v-slot:body-cell-edit="props">
-<q-td>
-<q-btn
-label="Editar"
-color="secondary"
-icon="edit"
-@click="editPayment(props.row)"
-/>
-</q-td>
-</template>
-<template v-slot:body-cell-Nombre="props">
-<q-td>
-<q-btn
-class="full-width"
-color="primary"
-no-caps
-@click="getPaymentInfo(props.row)"
->
-{{ props.row.Nombre}}
-</q-btn>
-</q-td>
-</template>
-</q-table>
-</q-dialog>
+  <q-dialog
+    :maximized="maximizedToggle"
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    full-width
+    full-height
+    :model-value="parentHistoryOpen"
+  >
+    <q-table
+      flat
+      bordered
+      ref="tableRef"
+      title="Pagos"
+      :rows="rows"
+      :columns="columns"
+      row-key="id"
+      v-model:pagination="pagination"
+      :loading="serverPagination.loading"
+      :filter="filter"
+      binary-state-sort
+      @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
+    >
+      <template v-slot:top-right> </template>
+      <template v-slot:body-cell-edit="props">
+        <q-td>
+          <q-btn
+            label="Editar"
+            color="secondary"
+            icon="edit"
+            @click="editPayment(props.row)"
+          />
+        </q-td>
+      </template>
+      <template v-slot:body-cell-Nombre="props">
+        <q-td>
+          <q-btn
+            class="full-width"
+            color="primary"
+            no-caps
+            @click="getPaymentInfo(props.row)"
+          >
+            {{ props.row.Nombre}}
+          </q-btn>
+        </q-td>
+      </template>
+    </q-table>
+  </q-dialog>
 </template>
 <script setup>
 import { ref, watchEffect } from 'vue';
@@ -57,44 +57,44 @@ const addPaymentDialog = ref(false)
 const studentRef = ref()
 const studentRefEdit = ref()
 function editPayment(student){
-studentRefEdit.value = student
-addPaymentDialog.value = true
+  studentRefEdit.value = student
+  addPaymentDialog.value = true
 }
 function getPaymentInfo(student) {
-studentRef.value = student
-studentOpen.value = true
+  studentRef.value = student
+  studentOpen.value = true
 }
 const columns = [
-{ "name": "Fecha", "label": "Fecha", "field": "Fecha", "align": "left", "sortable": true },
-{ "name": "Monto", "label": "Monto", "field": "Monto", "align": "left", "sortable": true },
-{ "name": "StudentId", "label": "CÉDULA DE IDENTIDAD", "field": "StudentId", "align": "left", "sortable": true },
-{ "name": "Referencia", "label": "Referencia", "field": "Referencia", "align": "left", "sortable": true },
-{ "name": "CuotaName", "label": "Cuota", "field": "CuotaName", "align": "left", "sortable": true },
-{ name: 'edit', label: 'Edit', align: 'center', sortable: false },
+  { "name": "Fecha", "label": "Fecha", "field": "Fecha", "align": "left", "sortable": true },
+  { "name": "Monto", "label": "Monto", "field": "Monto", "align": "left", "sortable": true },
+  { "name": "StudentId", "label": "CÉDULA DE IDENTIDAD", "field": "StudentId", "align": "left", "sortable": true },
+  { "name": "Referencia", "label": "Referencia", "field": "Referencia", "align": "left", "sortable": true },
+  { "name": "CuotaName", "label": "Cuota", "field": "CuotaName", "align": "left", "sortable": true },
+  { name: 'edit', label: 'Edit', align: 'center', sortable: false },
 ]
 const tableRef = ref()
-const rows = ref([])
-const filter = ref('')
-const pagination = ref({
-sortBy: 'desc',
-descending: false,
-page: 1,
-rowsPerPage: 3,
-rowsNumber: 10,
-first: '',
-last: ''
-})
-const serverPagination = ref({
-callerCollection: "parents/" + props.parent.id +"/payments",
-defaultColumn: "Fecha",
-lastDocument: null,
-loading: false,
-extraFilter: undefined
-})
-watchEffect(() =>{
-console.log(tableRef.value)
-if (tableRef.value) {
-tableRef.value.requestServerInteraction()
-}
-})
+  const rows = ref([])
+  const filter = ref('')
+  const pagination = ref({
+    sortBy: 'desc',
+    descending: false,
+    page: 1,
+    rowsPerPage: 3,
+    rowsNumber: 10,
+    first: '',
+    last: ''
+  })
+  const serverPagination = ref({
+    callerCollection: "parents/" + props.parent.id +"/payments",
+    defaultColumn: "Fecha",
+    lastDocument: null,
+    loading: false,
+    extraFilter: undefined
+  })
+  watchEffect(() =>{
+    console.log(tableRef.value)
+    if (tableRef.value) {
+      tableRef.value.requestServerInteraction()
+    }
+  })
 </script>

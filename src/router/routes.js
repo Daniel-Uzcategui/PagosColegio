@@ -14,7 +14,8 @@ const routes = [
       },
       { path: "cuotas", component: () => import("pages/paymentCuotas.vue") },
       { path: "parents", component: () => import("pages/parentsView.vue") },
-      { path: "parentsOwed", component: () => import("pages/parentsWithAmountOwed.vue") },
+      { path: "houseHold", component: () => import("pages/houseHoldView.vue") },
+      { path: "owed", component: () => import("pages/houseHoldOwed.vue") },
     ],
   },
 

@@ -11,8 +11,8 @@
             <q-input v-model="Cédula_de_identidad" label="Cédula de identidad" filled />
             <q-input v-model="Sección" label="Sección" filled />
             <q-input v-model="Grado" label="Grado" filled />
-            <q-select v-model="Padres" :options="parents" label="Padres" filled multiple
-            :option-label="(parent) => parent.Nombre + ' ' + parent.Apellido"
+            <q-select v-model="houseHold" :options="houseHolds" label="Familia" filled
+            :option-label="(parent) => parent.Apellido"
             :option-value="(value) => value.id"
             opti
             emit-value
@@ -35,7 +35,7 @@
   import { db } from 'src/boot/vuefire';
   import { Notify } from 'quasar';
   import { useCollection } from 'vuefire';
-  const parents = useCollection(collection(db, 'parents'));
+  const houseHolds = useCollection(collection(db, 'houseHolds'));
 
   const props = defineProps({
   showDialog: {
@@ -55,7 +55,7 @@ const Cédula_de_identidad = toRef(props.student, 'Cédula de identidad');
 const Sección = toRef(props.student, 'Sección');
 const Grado = toRef(props.student, 'Grado');
 const TipoCuota = toRef(props.student, 'TipoCuota');
-const Padres = toRef(props.student, 'Padres');
+const houseHold = toRef(props.student, 'houseHold');
 
   
 async function onSubmit() {
@@ -68,7 +68,7 @@ async function onSubmit() {
         'Cédula de identidad': Cédula_de_identidad.value,
         Sección: Sección.value,
         Grado: Grado.value,
-        Padres: Padres.value
+        houseHold: houseHold.value
       });
       Notify.create({ message: 'Student updated', color: 'green' });
     } else {
@@ -79,7 +79,7 @@ async function onSubmit() {
         'Cédula de identidad': Cédula_de_identidad.value,
         Sección: Sección.value,
         Grado: Grado.value,
-        Padres: Padres.value
+        houseHold: houseHold.value
       });
       Notify.create({ message: 'Student added', color: 'green' });
     }

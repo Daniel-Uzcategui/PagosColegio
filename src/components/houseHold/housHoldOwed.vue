@@ -1,8 +1,9 @@
 <template>
     <div>
+      <q-btn color="primary" icon="check" label="OK" @click="calculateAmountOwedByAllHouseholds" />
         <q-table
           title="Parents"
-          :rows="parentsWithAmountOwed"
+          :rows="houseHoldsWithAmountOwed"
           :columns="columns"
         />
 
@@ -14,20 +15,19 @@
   import { useQuasar } from 'quasar';
   import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
   import { db } from 'src/boot/vuefire';
-  
-  const $q = useQuasar();
-  
-  const parentsCollection = collection(db, 'parents');
-  const parents = ref([]);
-  const parentsWithAmountOwed = ref([]);
+  import { calculateAmountOwedByAllHouseholds } from 'src/utils/callable';
+
+  const houseHoldsCollection = collection(db, 'houseHolds');
+  const houseHolds = ref([]);
+  const houseHoldsWithAmountOwed = ref([]);
   
   onMounted(async () => {
-    const querySnapshot = await getDocs(parentsCollection);
-    parents.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const querySnapshot = await getDocs(houseHoldsCollection);
+    houseHolds.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   
-    for (const parent of parents.value) {
+    for (const houseHold of houseHolds.value) {
       let totalOwed = 0;
-      const studentsSnapshots = await getDocs(query(collection(db, 'students'), where('Padres', 'array-contains', parent.id)));
+      const studentsSnapshots = await getDocs(query(collection(db, 'students'), where('houseHold', '==', houseHold.id)));
       for (const studentSnapshot of studentsSnapshots.docs) {
         const student = studentSnapshot.data();
         const cuotasSnapshots = await getDocs(collection(db, `cuotas`));
@@ -42,7 +42,7 @@
           }
         }
       }
-      parentsWithAmountOwed.value.push({ ...parent, totalOwed });
+      houseHoldsWithAmountOwed.value.push({ ...houseHold, totalOwed });
     }
   });
   

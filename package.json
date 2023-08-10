@@ -10,8 +10,8 @@
     "format": "prettier --write \"**/*.{js,vue,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "deploy": "quasar build && firebase deploy --only hosting",
-    "deployAll": "quasar build && firebase deploy --only 'hosting,functions'",
-    "deploy-functions": "firebase deploy --only functions"
+    "deployAll": "gcloud config set project ecrphmsb && quasar build && firebase deploy --only 'hosting,functions'",
+    "deploy-functions": "gcloud config set project ecrphmsb && firebase deploy --only functions"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",

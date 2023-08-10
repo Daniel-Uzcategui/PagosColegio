@@ -59,7 +59,15 @@ import { db } from 'src/boot/vuefire';
   const studentOpen = ref(false)
   const addStudentDialog = ref(false)
   const studentRef = ref()
-  const studentRefEdit = ref()
+  const studentDefault = {
+        Nombre: '',
+        Apellido: '',
+        'Cédula de identidad': 0,
+        Sección: '',
+        Grado: 1,
+        houseHold: ''
+      }
+  const studentRefEdit = ref(studentDefault)
   function editStudent(student){
     studentRefEdit.value = student
     addStudentDialog.value = true
@@ -67,7 +75,7 @@ import { db } from 'src/boot/vuefire';
   function updateAddStudentDiag (value) {
     addStudentDialog.value = value
     if (value === false) {
-      studentRefEdit.value = undefined
+      studentRefEdit.value = studentDefault
     }
   }
   function getStudentInfo(student) {
@@ -80,9 +88,9 @@ import { db } from 'src/boot/vuefire';
       serverPagination.value.extraFilter = undefined
     } else {
       serverPagination.value.extraFilter = {
-        key: 'Padres',
+        key: 'houseHold',
         value: value,
-        condition: 'array-contains'
+        condition: '=='
       }
     }
     tableRef.value.requestServerInteraction()

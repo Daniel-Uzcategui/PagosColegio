@@ -1,27 +1,102 @@
-import admin from "firebase-admin";
-import functions from "firebase-functions";
-admin.initializeApp()
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
+import { onCall } from "firebase-functions/v2/https";
+import admin from 'firebase-admin';
+import { setGlobalOptions } from "firebase-functions/v2/options";
+setGlobalOptions({maxInstances: 10})
+admin.initializeApp();
 
-const db = admin.firestore()
-const BATCH_SIZE = 500
-const LAST_SCHOOL_YEAR = 12
+export const handleCuota = onDocumentWritten(
+  'cuota/{cuotaId}',
+  async (event) => {
+    // Get the cuota data
+    const cuota = event.value.data();
+    event.subject
+    // Query for all students whose TipoCuota matches the cuota's Tipo
+    const studentsSnapshot = await admin
+      .firestore()
+      .collection('students')
+      .where('TipoCuota', '==', cuota.Tipo)
+      .get();
 
-export const updateStudents = functions.https.onCall(async (data, context) => {
-  const coll = db.collection('students')
-  let snapshot = await coll.get()
-  while (!snapshot.empty) {
-    const batch = db.batch()
-    snapshot.docs.forEach((doc) => {
-      const student = doc.data()
-      if (student.schoolYear === LAST_SCHOOL_YEAR) {
-        // graduate student
-        batch.update(doc.ref, { status: 'graduated' })
-      } else {
-        // move student up to next school year
-        batch.update(doc.ref, { schoolYear: student.schoolYear + 1 })
+    // Handle the different operation types
+    if (event.data.before.data()) {
+      // Update the cuota in each student's cuota_payments subcollection
+      for (const studentDoc of studentsSnapshot.docs) {
+        const studentData = studentDoc.data();
+        await admin
+          .firestore()
+          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .update(cuota);
       }
-    })
-    await batch.commit()
-    snapshot = await coll.startAfter(snapshot.docs[snapshot.docs.length - 1]).limit(BATCH_SIZE).get()
+    } else if (event.data.after.data()) {
+      // Add the cuota to each student's cuota_payments subcollection
+      for (const studentDoc of studentsSnapshot.docs) {
+        const studentData = studentDoc.data();
+        await admin
+          .firestore()
+          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .set(cuota);
+      }
+    }  else if (!event.data.after.exists()) {
+      // Delete the cuota from each student's cuota_payments subcollection
+      for (const studentDoc of studentsSnapshot.docs) {
+        const studentData = studentDoc.data();
+        await admin
+          .firestore()
+          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .delete();
+      }
+    }
   }
-})
+);
+
+
+
+
+export const calculateAmountOwedByAllHouseholds = onCall(
+  async (data, context) => {
+      // Calculate the amount owed by each household
+      let totalAmountOwed = 0;
+      const houseHoldsSnapshot = await admin
+        .firestore()
+        .collection('houseHolds')
+        .get();
+      for (const houseHoldDoc of houseHoldsSnapshot.docs) {
+        const houseHoldData = houseHoldDoc.data();
+        let amountOwed = 0;
+        const studentsSnapshot = await admin
+          .firestore()
+          .collection(`/students`).where('houseHold', '==', houseHoldDoc.id)
+          .get();
+        for (const studentDoc of studentsSnapshot.docs) {
+          const studentData = studentDoc.data();
+          const cuotasSnapshot = await admin
+            .firestore()
+            .collection(`students/${studentData.id}/cuota_payments`)
+            .get();
+          for (const cuotaDoc of cuotasSnapshot.docs) {
+            const cuotaData = cuotaDoc.data();
+            amountOwed += cuotaData.RemainingAmountDue;
+          }
+        }
+
+        // Update the amount owed in the household's document
+        await admin
+          .firestore()
+          .doc(`houseHolds/${houseHoldDoc.id}`)
+          .update({ amountOwed });
+
+        // Add the household's amount owed to the total amount owed
+        totalAmountOwed += amountOwed;
+      }
+
+      // Update the total amount owed in the school/accounting document
+      await admin
+        .firestore()
+        .doc('school/accounting')
+        .update({ totalAmountOwed, lastUpdate: new Date() });
+
+      // Return the calculated total amount owed
+      return { totalAmountOwed };
+    });
+
