@@ -8,7 +8,7 @@
           <q-form @submit="onSubmit">
             <q-input v-model="Apellido" label="Apellido" filled />
             <q-select v-model="Padres" :options="parents" label="Padres" filled multiple
-            :option-label="(parent) => parent.Nombre + ' ' + parent.Apellido"
+            :option-label="labelParent"
             :option-value="(value) => value.id"
             emit-value
             map-options
@@ -24,7 +24,7 @@
   </template>
   
   <script setup>
-  import { ref, toRef } from 'vue';
+  import { toRef } from 'vue';
   import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
   import { db } from 'src/boot/vuefire';
   import { Notify } from 'quasar';
@@ -43,7 +43,10 @@
   },
   });
   const emits = defineEmits(['update:showDialog', 'submitted'])
-  
+  function labelParent (parent) {
+    console.log(parent.Nombre)
+    return parent.Nombre + ' ' + parent.Apellido
+  }
 const Apellido = toRef(props.houseHold, 'Apellido');
 const Padres = toRef(props.houseHold, 'Padres');
   async function onSubmit() {
@@ -53,6 +56,7 @@ const Padres = toRef(props.houseHold, 'Padres');
       await updateDoc(doc(db, 'houseHolds', props.houseHold.id), {
         Apellido: Apellido.value.toUpperCase(),
         Padres: Padres.value,
+        PadresRef: Padres.value.map(x => doc(db, 'parents', x))
       });
       Notify.create({ message: 'Familia updated', color: 'green' });
     } else {
@@ -60,6 +64,7 @@ const Padres = toRef(props.houseHold, 'Padres');
       await addDoc(collection(db, 'houseHolds'), {
         Apellido: Apellido.value.toUpperCase(),
         Padres: Padres.value,
+        PadresRef: Padres.value.map(x => doc(db, 'parents', x))
       });
       Notify.create({ message: 'Familia added', color: 'green' });
     }

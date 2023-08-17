@@ -3,7 +3,7 @@
     @update:model-value="(e) => $emit('update:modelValue', e)">
     <q-card class="full-width">
       <div v-if="cuotaRef" class="text-center text-bold">
-        {{ cuotaRef.Periodo.from ? 'Editando cuota: ' + cuotaRef.Periodo.from.toDate().toLocaleDateString("es-MX") : '' }}
+        {{ cuotaRef.id && cuotaRef.Periodo.from ? 'Viendo cuota: ' + cuotaRef.Periodo.from?.toDate?.().toLocaleDateString("es-MX") : 'Creando Cuota' }}
 
       </div>
         <q-form
@@ -15,11 +15,13 @@
             mask="MM/DD/YYYY"
             range
             minimal
+            :readonly="cuotaRef.id ? true : false"
           />
-          <q-input v-model.number="Monto" type="number" label="Monto" />
-          <q-select style="min-width: 30%;" v-model="Tipo" :options="options" label="Tipo" filled />
+          <q-input :readonly="cuotaRef.id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
+          <q-input :readonly="cuotaRef.id ? true : false" v-model.number="Monto" type="number" label="Monto" />
           <div>
-            <q-btn label="Submit" type="submit" color="primary"/>
+            <q-btn v-if="cuotaRef.id ? false : true" class="q-ma-md" label="Submit" type="submit" color="primary"/>
+            <q-btn v-if="cuotaRef.id ? true : false" class="q-ma-md" color="red" icon="delete" label="Borrar" @click="deleteCuota" />
             <!-- <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" /> -->
           </div>
         </q-form>
@@ -27,22 +29,28 @@
   </q-dialog>
 </template>
 <script setup>
-import { ref, toRef, watch } from 'vue';
+import { toRef, watch } from 'vue';
 import { useCuotaStore } from 'src/stores/Cuotas.js';
 import { useQuasar } from 'quasar'
+import { collection, deleteDoc, doc } from 'firebase/firestore';
+import { db } from 'src/boot/vuefire';
 const $q = useQuasar()
 const cuotaStore = useCuotaStore()
 const props = defineProps(['modelValue', 'editCuota'])
 const cuotaRef = toRef(props, 'editCuota')
-const emits = defineEmits(['update:modelValue', 'updatedOrCreated'])
-const options = ['A', 'B', 'C', 'D']
-const Periodo = ref()
-const Monto = ref()
-const Tipo = ref()
+const emits = defineEmits(['update:modelValue', 'updatedOrCreated', 'hide'])
+const Periodo = toRef(props.editCuota, 'Periodo')
+const Monto = toRef(props.editCuota, 'Monto')
+const Tipo = toRef(props.editCuota, 'Tipo')
+const Alias = toRef(props.editCuota, 'Alias')
 function reset () {
-  Periodo.value = undefined
+  Periodo.value = {
+    from: undefined,
+    to: undefined
+  }
   Monto.value = undefined
   Tipo.value = undefined
+  Alias.value = undefined
 }
 function dateFromPeriodo (string) {
   let mm = string.slice(0,2)
@@ -53,26 +61,52 @@ function dateFromPeriodo (string) {
 async function onSubmit() {
   try {
     let periodo = { from: dateFromPeriodo(Periodo.value.from), to: dateFromPeriodo(Periodo.value.to)}
-    if(props.editCuota?.id) {
-      await cuotaStore.set({
-        id: props.editCuota.id,
-        Periodo: periodo,
-        Monto: Monto.value,
-        lastChange: new Date(),
-        Tipo: Tipo.value
-      })
-    } else {
+    // if(props.editCuota?.id) {
+    //   await cuotaStore.set({
+    //     id: props.editCuota.id,
+    //     Periodo: periodo,
+    //     Monto: Monto.value,
+    //     lastChange: new Date(),
+    //     Alias: Alias.value
+    //   })
+    // } 
+    // else {
       await cuotaStore.add({
           Periodo: periodo,
           Monto: Monto.value,
-          Tipo: Tipo.value,
-          addedIn: new Date(),
+          dateIn: new Date(),
+        Alias: Alias.value
+
         })
-    }
+    // }
   } catch (error) {
-    return $q.notify("Error al crear o editar la cuota")
+    return $q.notify({message: "Error al crear o editar la cuota", color: 'red'})
   }
   return afterSubmit()
+}
+async function deleteCuota () {
+  try {
+    return $q.dialog({
+        title: 'Confirmar la eliminación de la cuota',
+        message: 'Está seguro que quiere elimnarla? Los cambios son irreversibles',
+        cancel: true,
+        persistent: true
+      }).onOk(async () => {
+        // console.log('>>>> OK')
+        try {
+          console.log(cuotaRef.value.id)
+          await deleteDoc(doc(collection(db, 'cuotas/'),  cuotaRef.value.id)).then(() => $q.notify("cuota eliminada"))
+        } catch (error) {
+          $q.notify({message: "Error al eliminar la cuota", color: 'red'})
+        } finally {
+          emits('update:modelValue')
+          emits('updatedOrCreated')
+          return
+        }
+      })
+  } catch (error) {
+    
+  }
 }
 function afterSubmit () {
   $q.notify(props.editCuota?.id ? "Cuota Editada" :"Cuota Creada")
@@ -82,17 +116,17 @@ function afterSubmit () {
 watch(cuotaRef, ()=> {
   let cuota = cuotaRef.value
   if(cuota) {
-     Periodo.value = {from: cuota.Periodo.from.toDate().toLocaleDateString('en-US', {
+     Periodo.value = {from: cuota.Periodo.from?.toDate().toLocaleDateString('en-US', {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
-}), to: cuota.Periodo.to.toDate().toLocaleDateString('en-US', {
+}), to: cuota.Periodo.to?.toDate().toLocaleDateString('en-US', {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
 })}
      Monto.value = cuota.Monto
-     Tipo.value = cuota.Tipo
+     Alias.value = cuota.Alias
   }
   console.log(Periodo.value)
 })

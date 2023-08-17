@@ -1,39 +1,46 @@
 <template>
-    <q-dialog :model-value="showDialog" @hide="$emit('update:showDialog', false)">
+    <q-dialog :model-value="showDialog" @hide="$emit('update:showDialog', false)" maximized>
+
       <q-table
         flat bordered
         title="Cuotas"
         :rows="cuotas"
         :columns="columns"
-        row-key="id"
-        v-model:selected="selected"
-        selection="multiple"
+        :row-key="row=>row.id + row.Student.id"
       >
         <template v-slot:top-right>
-          <q-btn color="primary" icon="add" label="Añadir pago" @click="addPaymentDialog = true" />
+          <q-btn color="primary" class="q-mr-md" icon="add" label="Añadir pago" @click="addPaymentDialog = true" />
+          <q-btn class="absolute-top-right" style="z-index: 99999;" dense flat icon="close" @click="emits('update:showDialog', false)">
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+        </q-btn>
         </template>
-        <template v-slot:body-cell-Monto="{ row }">
-            <q-td :class="{ 'bg-green text-white': remainingAmountDue[row.id] === 0, 'bg-red text-white': remainingAmountDue[row.id] === row.Monto , 'bg-yellow-10 text-white': remainingAmountDue[row.id] !== row.Monto && remainingAmountDue[row.id] > 0}">
-                {{ remainingAmountDue[row.id] }}
-                <q-inner-loading :showing="typeof remainingAmountDue[row.id] === 'undefined'">
-                    <q-spinner size="20px" color="primary" />
-                </q-inner-loading>
+        <template v-slot:body-cell-Monto="prop">
+            <q-td :class="{ 'bg-green text-white': prop.row.RemainingAmountDue=== 0, 'bg-red text-white': prop.row.RemainingAmountDue === prop.row.Monto , 'bg-yellow-10 text-white': prop.row.RemainingAmountDue !== prop.row.Monto && prop.row.RemainingAmountDue > 0}">
+                {{ prop.row.RemainingAmountDue?.toFixed(2) }}
+            </q-td>
+        </template>
+        <template v-slot:body-cell-Student="prop">
+            <q-td>
+                <q-btn color="primary" icon="person" :label="prop.row.Student?.Nombre" @click="studentRefEdit=prop.row.Student;addStudentDialog = true;" />
             </q-td>
         </template>
       </q-table>
-      <AddPayment v-if="addPaymentDialog" @submitted="submitted = !submitted" :selectedCuotas="selected" :students="students" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" :houseHold="houseHoldRef" />
+      <AddPayment v-if="addPaymentDialog" @submitted="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :students="students" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" :houseHold="houseHoldRef" />
+      <AddStudent v-if="addStudentDialog" v-model:show-dialog="addStudentDialog" @submitted="submitted=!submitted; emits('submitted')" :student="studentRefEdit" />
     </q-dialog>
   </template>
   
   <script setup>
   import { toRef, watchEffect } from 'vue';
   import { ref } from 'vue';
-  import { collection, query, where,getDoc, orderBy, limit, doc } from 'firebase/firestore';
+  import { collection, query, where, getDocs } from 'firebase/firestore';
   import { useCollection } from 'vuefire'
   import { db } from 'src/boot/vuefire';
   import AddPayment from './addPayment.vue';
+import AddStudent from '../students/addStudent.vue';
   const submitted = ref(false)
-  const selected = ref([]);
+  const studentRefEdit = ref()
+  const addStudentDialog = ref(false)
   const props = defineProps({
     showDialog: {
       type: Boolean,
@@ -44,7 +51,7 @@
       required: true,
     },
   });
-  const emits = defineEmits(['update:showDialog'])
+  const emits = defineEmits(['update:showDialog', 'submitted'])
   
   const houseHoldRef = toRef(props, 'houseHold');
   const addPaymentDialog = ref(false);
@@ -54,42 +61,31 @@
   }
   
   const cuotas = ref([]);
-  const students = useCollection(query(collection(db, 'students'), where('houseHold', '==', houseHoldRef.value.id)), { ssrKey: 'students-ssr' })
-  const cuotasCollection = useCollection(query(collection(db, 'cuotas'), orderBy('Periodo.from', 'desc'), limit(12), where('Periodo.from', '<=', new Date())), { ssrKey: 'cuotas-ssr' })
+  const students = useCollection(query(collection(db, 'students'), where('houseHold', '==', houseHoldRef.value.id)))
   
   watchEffect(async () => {
-    cuotas.value = [];
-    students.value.forEach(student => {
-      const studentCuotas = cuotasCollection.value.filter(cuota => cuota.Tipo === student.TipoCuota);
-      studentCuotas.forEach(cuota => {
-        const newCuota = {...cuota};
-        newCuota.Student = student;
-        cuotas.value.push(newCuota);
-      });
-    });
-  });
-  const remainingAmountDue = ref({});
-
-watchEffect(async () => {
     console.log(submitted.value)
-  const newRemainingAmountDue = {};
-  for (const cuota of cuotas.value) {
-    const cuotaPaymentRef = doc(db, `students/${cuota.Student.id}/cuota_payments`, cuota.id);
-    const cuotaPaymentSnap = await getDoc(cuotaPaymentRef);
-    if (cuotaPaymentSnap.exists()) {
-      newRemainingAmountDue[cuota.id] = cuotaPaymentSnap.data().RemainingAmountDue;
-    } else {
-      newRemainingAmountDue[cuota.id] = cuota.Monto;
+    cuotas.value = []
+  for (const student of students.value) {
+    const cuotaPaymentsRef = query(collection(db, `students/${student.id}/cuota_payments`), where('RemainingAmountDue', '>', 0));
+    const cuotaPaymentsSnap = await getDocs(cuotaPaymentsRef);
+    cuotaPaymentsSnap.forEach(cuotaPayment => {
+      const newCuota = cuotaPayment.data();
+    if (newCuota.Periodo.from.toDate() <= new Date()) {
+      newCuota.Student = student;
+      newCuota.id = cuotaPayment.id
+      cuotas.value.push(newCuota);
     }
+    });
   }
-  remainingAmountDue.value = newRemainingAmountDue;
 });
   
   const columns = [
     { type: 'selection', name: 'selected', align: 'center', field: 'selected' },
+    { name: 'Alias', label: 'Alias', field: 'Alias', align: 'left', sortable: true },
     { name: 'PeriodoFrom', label: 'Periodo Desde', field: row => toDateLocate(row.Periodo.from), align: 'left', sortable: true },
     { name: 'PeriodoTo', label: 'Periodo Hasta', field: row => toDateLocate(row.Periodo.to), align: 'left', sortable: true },
-    { name: 'Monto', label: 'Monto', field: (row) => remainingAmountDue.value[row.id], align: 'left', sortable: true },
+    { name: 'Monto', label: 'Monto Restante', field: 'RemainingAmountDue', align: 'left', sortable: true },
     { name: 'Student',label: 'Estudiante', field: (row) => row.Student?.Nombre, align: 'left', sortable: true }
   ];
   

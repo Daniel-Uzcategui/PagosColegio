@@ -14,14 +14,14 @@
       @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
     >
       <template v-slot:top-right>
-        <q-select style="min-width: 300px;" v-model="Padres" :options="parents" filled use-input
+        <!-- <q-select style="min-width: 300px;" v-model="Padres" :options="parents" filled use-input
             :option-label="(parent) => parent.Nombre + ' ' + parent.Apellido"
             :option-value="(value) => value.id"
             label="Representates"
             emit-value
             map-options
             @update:model-value="setFilter"
-            :filter="(options, filter) => options.filter(option => option.Apellido.toLowerCase().includes(filter.toLowerCase()))" />
+            :filter="(options, filter) => options.filter(option => option.Apellido.toLowerCase().includes(filter.toLowerCase()))" /> -->
         <q-btn color="primary" icon="add" label="Añadir estudiante" @click="addStudentDialog = true" />
         <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
           <template v-slot:append>
@@ -41,31 +41,33 @@
       </template>
 
     </q-table>
-    <StudentPayments v-if="studentOpen" v-model="studentOpen" :student="studentRef" />
+    <HouseHoldPayments v-if="studentOpen" v-model:show-dialog="studentOpen" :houseHold="houseHoldRef" />
     <AddStudent v-if="addStudentDialog" :show-dialog="addStudentDialog" @update:show-dialog="updateAddStudentDiag" :student="studentRefEdit" />
     </div>
   </template>
   <script setup>
   import { ref, onMounted } from 'vue';
 
-import StudentPayments from './studentPayments.vue';
 import { onRequest } from 'src/utils/onRequest.js';
 import AddStudent from './addStudent.vue';
-import { useCollection } from 'vuefire';
-import { collection } from 'firebase/firestore';
-import { db } from 'src/boot/vuefire';
-  const parents = useCollection(collection(db, 'parents'));
-  const Padres = ref(null)
+// import { useCollection } from 'vuefire';
+// import { collection } from 'firebase/firestore';
+// import { db } from 'src/boot/vuefire';
+import { yearsByNumber } from 'src/utils/schoolYear.js';
+import HouseHoldPayments from '../houseHold/houseHoldPayments.vue';
+  // const parents = useCollection(collection(db, 'parents'));
+  // const Padres = ref(null)
   const studentOpen = ref(false)
   const addStudentDialog = ref(false)
   const studentRef = ref()
   const studentDefault = {
         Nombre: '',
         Apellido: '',
-        'Cédula de identidad': 0,
+        'ced': 0,
         Sección: '',
         Grado: 1,
-        houseHold: ''
+        houseHold: '',
+        Discount: 1
       }
   const studentRefEdit = ref(studentDefault)
   function editStudent(student){
@@ -78,8 +80,12 @@ import { db } from 'src/boot/vuefire';
       studentRefEdit.value = studentDefault
     }
   }
+  const houseHoldRef = ref({
+    id: ''
+  })
   function getStudentInfo(student) {
     studentRef.value = student
+    houseHoldRef.value.id = student.houseHold
     studentOpen.value = true
   }
   function setFilter (value) {
@@ -99,9 +105,9 @@ import { db } from 'src/boot/vuefire';
   const columns = [
     { "name": "Nombre", "label": "NOMBRE", "field": "Nombre", "align": "left", "sortable": true },
     { "name": "Apellido", "label": "APELLIDO", "field": "Apellido", "align": "left", "sortable": true },
-    { "name": "Cédula de identidad", "label": "CÉDULA DE IDENTIDAD", "field": "Cédula de identidad", "align": "left", "sortable": true },
+    { "name": "ced", "label": "CÉDULA DE IDENTIDAD", "field": "ced", "align": "left", "sortable": true },
     { "name": "Sección", "label": "SECCIÓN", "field": "Sección", "align": "left", "sortable": true },
-    { "name": "Grado", "label": "GRADO", "field": "Grado", "align": "left", "sortable": true },
+    { "name": "Grado", "label": "GRADO", "field": (row) => yearsByNumber.get(row.Grado), "align": "left", "sortable": true },
     { name: 'edit', label: 'Edit', align: 'center', sortable: false },
   ]
   const tableRef = ref()

@@ -19,65 +19,59 @@
         v-model:pagination="pagination"
         :loading="serverPagination.loading"
         :filter="filter"
+        v-model:selected="selectedPayments"
+        selection="multiple"
         binary-state-sort
         @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
       >
+        <template v-slot:top>
+      <print-holder :houseHold="houseHold" :payments="selectedPayments"></print-holder>
+
+        </template>
         <template v-slot:top-right>
+        <q-input class="q-pl-md" borderless dense debounce="300" v-model="filter" placeholder="Buscar">
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
         <q-btn dense flat icon="close" v-close-popup>
             <q-tooltip class="bg-white text-primary">Close</q-tooltip>
         </q-btn>
         </template>
-        <template v-slot:body-cell-edit="props">
+        <template v-slot:body-cell-Fecha="props">
           <q-td>
-            <q-btn
-              label="Editar"
-              color="secondary"
-              icon="edit"
-              @click="editPayment(props.row)"
-            />
+            {{ props.row.fechaPago.toDate().toLocaleDateString('es-VE') }}
           </q-td>
         </template>
-        <template v-slot:body-cell-Nombre="props">
+        <template v-slot:body-cell-FechaEntry="props">
           <q-td>
-            <q-btn
-              class="full-width"
-              color="primary"
-              no-caps
-              @click="getPaymentInfo(props.row)"
-            >
-              {{ props.row.Nombre}}
-            </q-btn>
+            {{ props.row.dateIn.toDate().toLocaleDateString('es-VE') }}
           </q-td>
         </template>
       </q-table>
     </q-dialog>
   </template>
   <script setup>
-  import { ref, toRef, watchEffect } from 'vue';
+  import { ref, watchEffect } from 'vue';
   import { onRequest } from 'src/utils/onRequest.js';
+import PrintHolder from './printHolder.vue';
   const maximizedToggle = ref(true)
   const props = defineProps(['houseHold', 'houseHoldHistoryOpen'])
-  const studentOpen = ref(false)
-  const addPaymentDialog = ref(false)
-  const studentRef = ref()
-  const studentRefEdit = ref()
-  function editPayment(student){
-    studentRefEdit.value = student
-    addPaymentDialog.value = true
-  }
-  function getPaymentInfo(student) {
-    studentRef.value = student
-    studentOpen.value = true
-  }
+  const selectedPayments = ref([])
+
   const columns = [
-    { "name": "Fecha", "label": "Fecha", "field": "Fecha", "align": "left", "sortable": true },
-    { "name": "Monto", "label": "Monto", "field": "Monto", "align": "left", "sortable": true },
-    { "name": "StudentId", "label": "Cédula estudiante", "field": "StudentId", "align": "left", "sortable": true },
+    { "name": "Fecha", "label": "Fecha", "field": row => row.fechaPago.toDate(), "align": "left", "sortable": true },
+    { "name": "FechaEntry", "label": "Fecha Registro", "field": row => row.dateIn.toDate(), "align": "left", "sortable": true },
+    { "name": "Monto", "label": "Monto$", "field": (row) => row.Monto.toFixed(2), "align": "left", "sortable": true },
+    { "name": "MontoBS", "label": "MontoBS", "field": "MontoTotalBS", "align": "left", "sortable": true },
+    { "name": "TasaBCV", "label": "TasaBCV", "field": "TasaBCV", "align": "left", "sortable": true },
+    { "name": "cuotaInfo.student.ced", "label": "Cédula estudiante", "field": row => row.cuotaInfo.student.ced, "align": "left", "sortable": true },
     { "name": "Referencia", "label": "Referencia", "field": "Referencia", "align": "left", "sortable": true },
-    { "name": "CuotaName", "label": "Cuota", "field": "CuotaName", "align": "left", "sortable": true },
-    { name: 'edit', label: 'Edit', align: 'center', sortable: false },
+    { "name": "CuotaName", "label": "Cuota", field: row=> row.cuotaInfo.Alias, "align": "left", "sortable": true },
+    { "name": "Motivo", "label": "Motivo", "field": "Motivo", "align": "left", "sortable": true },
+    
   ]
-  const tableRef = ref()
+    const tableRef = ref()
     const rows = ref([])
     const filter = ref('')
     const pagination = ref({

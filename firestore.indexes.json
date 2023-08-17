@@ -1,4 +1,225 @@
 {
-  "indexes": [],
-  "fieldOverrides": []
+  "indexes": [
+    {
+      "collectionGroup": "categorias",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cuotas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "Periodo.to",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Periodo.from",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cuotas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "Periodo.to",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Periodo.from",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cuotas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "Tipo",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Periodo.from",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cuotas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "Tipo",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "Periodo.from",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "filters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "groupComp",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "item",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "itemGroup",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "menu",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "menu",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "softDelete",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "DateIn",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "students",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "Padres",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "Apellido",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "typeAccess",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "email",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "payments",
+      "fieldPath": "Referencia",
+      "ttl": false,
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
 }

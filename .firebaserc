@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "restaurant-testnet",
+    "default": "ecrphmsb",
     "QA": "qa-restaurant-testnet",
     "ecr": "ecrhwei8",
     "prodchopzi": "chopzi-production",

@@ -16,8 +16,9 @@
     >
       <template v-slot:top-right>
         <div class="row justify-end full-width">
-          <q-btn color="primary" icon="add" label="Añadir" @click="getCuotaInfo()" />
+          <q-btn class="q-ma-md"  color="primary" icon="add" label="Añadir" @click="getCuotaInfo()" />
           <q-btn size="md" flat icon="event" class="cursor-pointer">
+
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
               <q-date minimal @update:model-value="removeRange" :model-value="filter" range>
                 <div class="row items-center justify-end">
@@ -32,7 +33,7 @@
           <q-option-group
             v-model="group"
             color="secondary"
-            :options="options"
+            :options="cuotasOptions"
             inline
             @update:model-value="changeFilter"
           />
@@ -44,39 +45,30 @@
 
     </q-table>
     <cuotasEdit @hide="editCuota = undefined" v-model="cuotaOpen" :editCuota="editCuota" @updatedOrCreated="tableRef.requestServerInteraction()" />
-    </div>
+  </div>
   </template>
   <script setup>
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, computed } from 'vue';
   import cuotasEdit from './cuotasEdit.vue';
   import { onRequest } from 'src/utils/onRequest';
+  import { useDocument } from 'vuefire';
+  import { collection, doc } from 'firebase/firestore';
+  import { db } from 'src/boot/vuefire';
   const tableRef = ref()
   const cuotaOpen = ref(false)
-  const editCuota = ref()
+  const cuotasOptionsDoc = useDocument(doc(collection(db, 'school'), 'cuotas'))
+  const cuotasOptions = computed(() => cuotasOptionsDoc.value?.options || [])
+  const cuotaDefault = {
+        Alias: '',
+        Periodo: {
+          from: new Date(),
+          to: new Date()
+        },
+        Monto: 0,
+      }
+  const editCuota = ref(cuotaDefault)
   const rows = ref([])
   const group = ref()
-  const options = ref([
-        {
-          label: 'Todos',
-          value: 'All'
-        },
-        {
-          label: 'A',
-          value: 'A'
-        },
-        {
-          label: 'B',
-          value: 'B'
-        },
-        {
-          label: 'C',
-          value: 'C'
-        },
-        {
-          label: 'D',
-          value: 'D'
-        }
-      ])
   function changeFilter (value) {
     console.log({value})
     if (value === 'All') {
@@ -91,6 +83,7 @@
     tableRef.value.requestServerInteraction()
 
   }
+
   function getCuotaInfo(cuota) {
     console.log({cuota})
     cuotaOpen.value = true
@@ -98,13 +91,12 @@
         editCuota.value = cuota
         return
     }
-    editCuota.value = null
+    editCuota.value = cuotaDefault
   }
   const columns = [
     { "name": "PeriodoFrom", "label": "Periodo Desde", "field": row => toDateLocate(row.Periodo.from), "align": "left", "sortable": true },
     { "name": "PeriodoTo", "label": "Periodo Hasta", "field": row => toDateLocate(row.Periodo.to), "align": "left", "sortable": true },
     { "name": "Monto", "label": "Monto", "field": "Monto", "align": "left", "sortable": true },
-    { "name": "Tipo", "label": "Tipo", "field": "Tipo", "align": "left", "sortable": true },
   ]
   function toDateLocate (date) {
     return date.toDate().toLocaleDateString("es-MX")

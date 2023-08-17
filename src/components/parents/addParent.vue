@@ -10,7 +10,7 @@
             <q-input v-model="Apellido" label="Apellido" filled />
             <q-input v-model="Telefono" label="Telefono" filled />
             <q-input v-model="Email" label="Email" filled />
-            <q-input v-model="Cédula_de_identidad" label="Cédula de identidad" filled />
+            <q-input v-model="ced" label="Cédula de identidad" filled />
             <div>
               <q-btn label="Submit" type="submit" color="primary" />
               <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
@@ -44,7 +44,7 @@
 const Apellido = toRef(props.parent, 'Apellido');
 const Telefono = toRef(props.parent, 'Telefono');
 const Email = toRef(props.parent, 'Email');
-const Cédula_de_identidad = toRef(props.parent, 'Cédula de identidad');
+const ced = toRef(props.parent, 'ced');
   async function onSubmit() {
   try {
     if (props.parent.id) {
@@ -54,7 +54,7 @@ const Cédula_de_identidad = toRef(props.parent, 'Cédula de identidad');
         Apellido: Apellido.value.toUpperCase(),
         Telefono: Telefono.value,
         Email: Email.value,
-        'Cédula de identidad': Cédula_de_identidad.value,
+        'ced': ced.value,
       });
       Notify.create({ message: 'Representante updated', color: 'green' });
     } else {
@@ -64,7 +64,7 @@ const Cédula_de_identidad = toRef(props.parent, 'Cédula de identidad');
         Apellido: Apellido.value.toUpperCase(),
         Telefono: Telefono.value,
         Email: Email.value,
-        'Cédula de identidad': Cédula_de_identidad.value,
+        'ced': ced.value,
       });
       Notify.create({ message: 'Representante added', color: 'green' });
     }

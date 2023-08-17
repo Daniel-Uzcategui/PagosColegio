@@ -15,7 +15,7 @@
     >
       <template v-slot:top-right>
         <q-btn color="primary" icon="add" label="Añadir representante" @click="addParentDialog = true" />
-        <q-input class="q-pl-md" borderless dense debounce="300" v-model="filter" placeholder="Buscar">
+        <q-input debounce="500" class="q-pl-md" borderless dense  v-model="filter" placeholder="Buscar">
           <template v-slot:append>
             <q-icon name="search" />
           </template>
@@ -46,22 +46,25 @@
       </template>
 
     </q-table>
-    <ParentPayments v-if="parentOpen" v-model:show-dialog="parentOpen" :parent="parentRef" />
-      <parentPaymentHistory v-if="parentHistoryOpen" :parentHistoryOpen="parentHistoryOpen" :parent="parentRef" />
     <AddParent @Submitted="tableRef.requestServerInteraction()" v-if="addParentDialog" :show-dialog="addParentDialog" @update:show-dialog="updateAddParentDiag" :parent="parentRefEdit" />
     </div>
   </template>
   <script setup>
   import { ref, onMounted } from 'vue';
-  import ParentPayments from './parentPayments.vue';
   import { onRequest } from 'src/utils/onRequest.js';
   import AddParent from './addParent.vue';
-  import parentPaymentHistory from './parentPaymentHistory.vue';
   const parentHistoryOpen = ref(false)
   const parentOpen = ref(false)
   const addParentDialog = ref(false)
   const parentRef = ref()
-  const parentRefEdit = ref()
+  const parentDefault = {
+        Nombre: '',
+        Apellido: '',
+        Telefono: '',
+        Email: '',
+        'ced': 0,
+      }
+  const parentRefEdit = ref(parentDefault)
   function editParent(parent){
     parentRefEdit.value = parent
     addParentDialog.value = true
@@ -69,7 +72,7 @@
   function updateAddParentDiag (value) {
     addParentDialog.value = value
     if (value === false) {
-      parentRefEdit.value = undefined
+      parentRefEdit.value = parentDefault
     }
   }
   function getParentInfo(parent) {
@@ -83,7 +86,7 @@
   const columns = [
     { "name": "Nombre", "label": "NOMBRE", "field": "Nombre", "align": "left", "sortable": true },
     { "name": "Apellido", "label": "APELLIDO", "field": "Apellido", "align": "left", "sortable": true },
-    { "name": "Cédula de identidad", "label": "CÉDULA DE IDENTIDAD", "field": "Cédula de identidad", "align": "left", "sortable": true },
+    { "name": "ced", "label": "CÉDULA DE IDENTIDAD", "field": "ced", "align": "left", "sortable": true },
     { "name": "Telefono", "label": "TELEFONO", "field": "Telefono", "align": "left", "sortable": true },
     { "name": "Email", "label": "EMAIL", "field": "Email", "align": "left", "sortable": true },
     { name: 'edit', label: 'Editar', align: 'center', sortable: false },

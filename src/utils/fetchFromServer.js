@@ -13,7 +13,8 @@ export async function fetchFromServer(startRow, count, from, to, sortBy, descend
     var coll = collection(db, serverPagination.callerCollection);
     let desasc = descending ? 'desc' : 'asc'
     let q;
-    if (!isDate(from)) {
+    if (!isDate(from, sortBy)) {
+      console.log('NotDate')
       let filt = from.toUpperCase();
       q = query(coll,
         orderBy(sort, desasc),
@@ -26,6 +27,7 @@ export async function fetchFromServer(startRow, count, from, to, sortBy, descend
         serverPagination.lastDocument = null;
       }
     } else if (isDate(from)) {
+      console.log('isDate')
         let fr,tt
         fr = descending ? new Date(from) : new Date(to)
         tt = descending ? new Date(to) : new Date(from)
@@ -51,6 +53,10 @@ export async function fetchFromServer(startRow, count, from, to, sortBy, descend
     return { data: docData,lastDoc: docsSnapshots.docs[docsSnapshots.docs.length -1] };
 }
 
-var isDate = function(date) {
-    return (new Date(date) !== "Invalid Date") && !isNaN(new Date(date)) && date !== null;
+var isDate = function(date, sortBy) {
+    if (date.includes("/")) {
+      return true
+    }
+    return false
+    // return (new Date(date) !== "Invalid Date") && !isNaN(new Date(date)) && date !== null;
 }

@@ -1,11 +1,12 @@
 import { boot } from "quasar/wrappers";
 import { VueFire, VueFireAuth } from "vuefire";
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator  } from "firebase/firestore";
 import firebaseConfig from "app/config/firebase";
 import { getFunctions, connectFunctionsEmulator  } from "firebase/functions";
 export const firebaseApp = initializeApp(firebaseConfig.credentials);
 export const db = getFirestore();
+connectFirestoreEmulator(db, '127.0.0.1', 8080);
 export const functions = getFunctions(firebaseApp)
 connectFunctionsEmulator (functions,"127.0.0.1", 5001)
 const serialize = (doc) => {

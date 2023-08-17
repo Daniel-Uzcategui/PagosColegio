@@ -1,63 +1,104 @@
 <template>
-    <div>
-      <q-btn color="primary" icon="check" label="OK" @click="calculateAmountOwedByAllHouseholds" />
-        <q-table
-          title="Parents"
-          :rows="houseHoldsWithAmountOwed"
-          :columns="columns"
-        />
-
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref, onMounted } from 'vue';
-  import { useQuasar } from 'quasar';
-  import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
-  import { db } from 'src/boot/vuefire';
-  import { calculateAmountOwedByAllHouseholds } from 'src/utils/callable';
-
-  const houseHoldsCollection = collection(db, 'houseHolds');
-  const houseHolds = ref([]);
-  const houseHoldsWithAmountOwed = ref([]);
-  
-  onMounted(async () => {
-    const querySnapshot = await getDocs(houseHoldsCollection);
-    houseHolds.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-    for (const houseHold of houseHolds.value) {
-      let totalOwed = 0;
-      const studentsSnapshots = await getDocs(query(collection(db, 'students'), where('houseHold', '==', houseHold.id)));
-      for (const studentSnapshot of studentsSnapshots.docs) {
-        const student = studentSnapshot.data();
-        const cuotasSnapshots = await getDocs(collection(db, `cuotas`));
-        for (const cuotaSnapshot of cuotasSnapshots.docs) {
-          const cuota = cuotaSnapshot.data();
-          const cuotaPaymentRef = doc(db, `students/${student.id}/cuota_payments`, cuota.id);
-          const cuotaPaymentSnap = await getDoc(cuotaPaymentRef);
-          if (cuotaPaymentSnap.exists()) {
-            totalOwed += cuotaPaymentSnap.data().RemainingAmountDue;
-          } else {
-            totalOwed += cuota.Monto;
-          }
-        }
-      }
-      houseHoldsWithAmountOwed.value.push({ ...houseHold, totalOwed });
-    }
-  });
-  
-  const columns = [
-    { name: 'Nombre', label: 'Name', field: 'Nombre', align: 'left' },
-    { name: 'Apellido', label: 'Apellido', field: 'Apellido', align: 'left' },
-    { name: 'Telefono', label: 'Telefono', field: 'Telefono', align: 'left' },
-    { name: 'Email', label: 'Email', field: 'Email', align: 'left' },
-    {
-      name: 'totalOwed',
-      label: 'Total Owed',
-      field: 'totalOwed',
-      align: 'right',
-      format: val => `$ ${val.toFixed(2)}`
-    }
-  ];
-  </script>
-  
+  <div>
+  <q-table
+    flat bordered
+    ref="tableRef"
+    title="Familias"
+    :rows="rows"
+    :columns="columns"
+    row-key="id"
+    v-model:pagination="pagination"
+    :loading="serverPagination.loading"
+    :filter="filter"
+    binary-state-sort
+    @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
+  >
+    <template v-slot:top-right>
+      <calculateOwed />
+      <q-input class="q-pl-md" borderless dense debounce="300" v-model="filter" placeholder="Buscar">
+        <template v-slot:append>
+          <q-icon name="search" />
+        </template>
+      </q-input>
+    </template>
+    <template v-slot:body-cell-edit="props">
+      <q-td>
+        <q-btn label="Editar" color="secondary" icon="edit" @click="edithouseHold(props.row)" />
+      </q-td>
+    </template>
+    <template v-slot:top-row>
+        <q-tr>
+          <q-td colspan="100%">
+            Top row
+          </q-td>
+        </q-tr>
+      </template>
+    <template v-slot:body-cell-Apellido="props">
+      <q-td>
+        <q-btn class="full-width" color="primary" no-caps >
+          {{ props.row.Apellido }}
+        <q-menu auto-close anchor="bottom right" self="top right">
+          <q-list>
+            <q-item clickable @click="gethouseHoldInfo(props.row)">
+              <q-item-section>Ver cuotas pendientes</q-item-section>
+            </q-item>
+            <q-item clickable @click="viewPastPayments(props.row)">
+              <q-item-section>Ver pagos realizados</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </q-btn>
+      </q-td>
+    </template>
+  </q-table>
+  {{ totalOwed }}
+  <houseHoldPayments v-if="houseHoldOpen" v-model:show-dialog="houseHoldOpen" :houseHold="houseHoldRef" />
+    <houseHoldPaymentHistory v-if="houseHoldHistoryOpen" v-model:houseHoldHistoryOpen="houseHoldHistoryOpen" :houseHold="houseHoldRef" />
+  <AddhouseHold @submitted="tableRef.requestServerInteraction()" v-if="addhouseHoldDialog" :show-dialog="addhouseHoldDialog" @update:show-dialog="updateAddhouseHoldDiag" :houseHold="houseHoldRefEdit" />
+  </div>
+</template>
+<script setup>
+import { ref, onMounted } from 'vue';
+import houseHoldPayments from './houseHoldPayments.vue';
+import { onRequest } from 'src/utils/onRequest.js';
+import calculateOwed from '../accountig/calculateOwed.vue'
+import { useDocument } from 'vuefire';
+import { collection, doc } from 'firebase/firestore';
+import { db } from 'src/boot/vuefire';
+const houseHoldHistoryOpen = ref(false)
+  const houseHoldOpen = ref(false)
+  const houseHoldRef = ref()
+const columns = [
+  { "name": "Apellido", "label": "APELLIDO", "field": "Apellido", "align": "left", "sortable": true },
+  { name: 'Padres', label: 'Padres', field: 'Padres', align: 'left' },
+  { name: 'amountOwed', label: 'Monto', field: 'amountOwed', format: val => `$ ${val.toFixed(2)}`, align: 'left' },
+  { name: 'edit', label: 'Editar', align: 'center', sortable: false },
+]
+const totalOwed = useDocument(doc(collection(db,'school'), 'accounting'))
+function viewPastPayments(houseHold) {
+    houseHoldRef.value = houseHold
+    houseHoldHistoryOpen.value = true
+  }
+const tableRef = ref()
+  const rows = ref([])
+  const filter = ref('')
+  const pagination = ref({
+    sortBy: 'desc',
+    descending: false,
+    page: 1,
+    rowsPerPage: 3,
+    rowsNumber: 10,
+    first: '',
+    last: ''
+  })
+  const serverPagination = ref({
+    callerCollection: "houseHolds",
+    defaultColumn: "Apellido",
+    lastDocument: null,
+    loading: false
+  })
+  onMounted(() => {
+    // get initial data from server (1st page)
+    tableRef.value.requestServerInteraction()
+  })
+</script>
