@@ -27,11 +27,9 @@
     "stylus-loader": "^7.1.0",
     "v-money3": "^3.24.0",
     "vue": "^3.0.0",
-    "vue-dndrop": "^1.2.2",
     "vue-i18n": "^9.0.0",
     "vue-router": "^4.0.0",
-    "vuefire": "^3.1.13",
-    "xlsx": "^0.18.5"
+    "vuefire": "^3.1.13"
   },
   "devDependencies": {
     "@intlify/vite-plugin-vue-i18n": "^3.3.1",

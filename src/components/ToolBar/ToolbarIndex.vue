@@ -6,7 +6,7 @@
       class="row q-pr-md q-pl-md"
     >
       <div class="text-h5 text-weight-bold self-end cursor-pointer">
-        Restaurant
+        Administración Colegio
       </div>
     </q-card>
     <q-card

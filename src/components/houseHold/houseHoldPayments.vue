@@ -1,14 +1,14 @@
 <template>
     <q-dialog :model-value="showDialog" @hide="$emit('update:showDialog', false)" maximized>
-
       <q-table
         flat bordered
         title="Cuotas"
         :rows="cuotas"
         :columns="columns"
         :row-key="row=>row.id + row.Student.id"
-      >
+        >
         <template v-slot:top-right>
+          <q-btn color="secondary" class="q-mr-md" icon="add" label="Añadir cuota" @click="addCuotaDialog = true" />
           <q-btn color="primary" class="q-mr-md" icon="add" label="Añadir pago" @click="addPaymentDialog = true" />
           <q-btn class="absolute-top-right" style="z-index: 99999;" dense flat icon="close" @click="emits('update:showDialog', false)">
             <q-tooltip class="bg-white text-primary">Close</q-tooltip>
@@ -25,11 +25,11 @@
             </q-td>
         </template>
       </q-table>
+      <AddCuotaStudent v-if="addCuotaDialog" :cuotaRef="{}" @updatedOrCreated="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :students="students" v-model="addCuotaDialog" @update:show-dialog="updateAddPaymentDiag" :houseHold="houseHoldRef" />
       <AddPayment v-if="addPaymentDialog" @submitted="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :students="students" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" :houseHold="houseHoldRef" />
       <AddStudent v-if="addStudentDialog" v-model:show-dialog="addStudentDialog" @submitted="submitted=!submitted; emits('submitted')" :student="studentRefEdit" />
     </q-dialog>
   </template>
-  
   <script setup>
   import { toRef, watchEffect } from 'vue';
   import { ref } from 'vue';
@@ -37,10 +37,12 @@
   import { useCollection } from 'vuefire'
   import { db } from 'src/boot/vuefire';
   import AddPayment from './addPayment.vue';
-import AddStudent from '../students/addStudent.vue';
+  import AddStudent from '../students/addStudent.vue';
+  import AddCuotaStudent from '../payments/addCuotaStudent.vue';
   const submitted = ref(false)
   const studentRefEdit = ref()
   const addStudentDialog = ref(false)
+  const addCuotaDialog = ref(false)
   const props = defineProps({
     showDialog: {
       type: Boolean,

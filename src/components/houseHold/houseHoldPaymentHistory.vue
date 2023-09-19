@@ -24,10 +24,6 @@
         binary-state-sort
         @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
       >
-        <template v-slot:top>
-      <print-holder :houseHold="houseHold" :payments="selectedPayments"></print-holder>
-
-        </template>
         <template v-slot:top-right>
         <q-input class="q-pl-md" borderless dense debounce="300" v-model="filter" placeholder="Buscar">
           <template v-slot:append>
@@ -54,7 +50,7 @@
   <script setup>
   import { ref, watchEffect } from 'vue';
   import { onRequest } from 'src/utils/onRequest.js';
-import PrintHolder from './printHolder.vue';
+  // import PrintHolder from './printHolder.vue';
   const maximizedToggle = ref(true)
   const props = defineProps(['houseHold', 'houseHoldHistoryOpen'])
   const selectedPayments = ref([])

@@ -15,7 +15,8 @@ import { Notify } from 'quasar';
         loading.value = true
         await calculateAmountOwedByAllHouseholds()
     } catch (error) {
-        Notify.create({message:error, color: 'red'})
+        console.error(error)
+        Notify.create({message:error.message, color: 'red'})
     } finally {
         loading.value = false
     }

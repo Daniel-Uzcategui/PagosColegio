@@ -48,7 +48,7 @@ export default boot(({ router }) => {
   });
   router.addRoute("/", {
     path: "",
-    component: () => import("src/layouts/MainLayout.vue"),
+    component: () => import("src/layouts/AuthenticatedLayout.vue"),
     children: [
       {
         path: "",

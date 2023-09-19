@@ -1,5 +1,5 @@
 <template>
-  <q-item clickable>
+  <q-item v-if="name" clickable>
     <q-item-section side>
       <memberBubble :size="40" :name="name" :index="0" />
     </q-item-section>
@@ -14,7 +14,7 @@
         <q-input
           v-model="scope.value"
           type="text"
-          label="Project Name"
+          label="Nombre"
           @change="scope.set"
         />
       </q-popup-edit>
@@ -22,11 +22,15 @@
   </q-item>
 </template>
 <script setup>
+import { collection, doc } from "firebase/firestore";
+import { db } from "src/boot/vuefire";
 import memberBubble from "src/components/Members/memberBubble.vue";
 import { useUsersStore } from "src/stores/User";
 import { computed } from "vue";
+import { useDocument } from "vuefire";
+const user = useDocument(doc(collection(db, 'users'), useUsersStore().currentUser.uid))
 const name = computed({
-  get: () => useUsersStore().currentUserDoc?.name,
+  get: () => user.value?.name,
   set: (e) => useUsersStore().set({ name: e }),
 });
 </script>

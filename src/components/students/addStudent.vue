@@ -115,7 +115,6 @@
   import { useCollection } from 'vuefire';
   import { yearLabelValue } from 'src/utils/schoolYear';
   const houseHolds = useCollection(collection(db, 'houseHolds'));
-
   const props = defineProps({
   showDialog: {
     type: Boolean,
@@ -125,29 +124,29 @@
     type: Object,
     default: () => ({}),
   },
-});
-const emits = defineEmits(['update:showDialog', 'submitted'])
-const FechaInicioCuota = ref(props.student.FechaInicioCuota)
-const inicioCuotaHandle = computed({ get:() => FechaInicioCuota.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
-  FechaInicioCuota.value = Timestamp.fromDate(new Date(e))}})
-const ID = ref(props.student.id)
-const Nombre = ref(props.student.Nombre);
-const Apellido = ref(props.student.Apellido);
-const ced = ref(props.student.ced);
-const Sección = ref(props.student.Sección);
-const Grado = ref(props.student.Grado);
-const Discount = ref(props.student.Discount);
-const oldDiscount = ref(props.student.Discount)
-const newAmountStartDate = ref()
-const computedStartDate = computed({ get:() => newAmountStartDate.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
+  });
+  const emits = defineEmits(['update:showDialog', 'submitted'])
+  const FechaInicioCuota = ref(props.student.FechaInicioCuota)
+  const inicioCuotaHandle = computed({ get:() => FechaInicioCuota.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
+    FechaInicioCuota.value = Timestamp.fromDate(new Date(e))}})
+  const ID = ref(props.student.id)
+  const Nombre = ref(props.student.Nombre);
+  const Apellido = ref(props.student.Apellido);
+  const ced = ref(props.student.ced);
+  const Sección = ref(props.student.Sección);
+  const Grado = ref(props.student.Grado);
+  const Discount = ref(props.student.Discount);
+  const oldDiscount = ref(props.student.Discount)
+  const newAmountStartDate = ref()
+  const computedStartDate = computed({ get:() => newAmountStartDate.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
   newAmountStartDate.value = Timestamp.fromDate(new Date(e))}})
-const DiscountComputed = computed({
-  get: () => parseFloat(((Discount.value || 1) * 100).toFixed(2)), set: (e) => {
-    Discount.value = Math.round(e) * 0.01
-  }
-})
-const houseHold = ref(props.student.houseHold);
-const houseHoldOptions = ref()
+  const DiscountComputed = computed({
+    get: () => parseFloat(((Discount.value || 1) * 100).toFixed(2)), set: (e) => {
+      Discount.value = Math.round(e) * 0.01
+    }
+  })
+  const houseHold = ref(props.student.houseHold);
+  const houseHoldOptions = ref(houseHolds.value)
 function filterFn (val, update) {
         if (val === '') {
           update(() => {

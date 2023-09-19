@@ -1,5 +1,5 @@
 <template>
-    <div>
+  <div>
     <q-table
       flat bordered
       ref="tableRef"
@@ -57,18 +57,17 @@
     <houseHoldPayments @submitted="submittedPayments" v-if="houseHoldOpen" v-model:show-dialog="houseHoldOpen" :houseHold="houseHoldRef" />
       <houseHoldPaymentHistory v-if="houseHoldHistoryOpen" v-model:houseHoldHistoryOpen="houseHoldHistoryOpen" :houseHold="houseHoldRef" />
     <AddhouseHold @submitted="submittedPayments" v-if="addhouseHoldDialog" :show-dialog="addhouseHoldDialog" @update:show-dialog="updateAddhouseHoldDiag" :houseHold="houseHoldRefEdit" />
-    </div>
-  </template>
-  <script setup>
-  import totalOwed from '../accountig/totalOwed.vue'
-  import { ref, onMounted } from 'vue';
-  import houseHoldPayments from './houseHoldPayments.vue';
-  import { onRequest } from 'src/utils/onRequest.js';
-  import AddhouseHold from './addHouseHold.vue';
-  import calculateOwed from 'src/components/accountig/caculateOwed.vue'
-  import houseHoldPaymentHistory from './houseHoldPaymentHistory.vue';
+  </div>
+</template>
+<script setup>
+import totalOwed from '../accountig/totalOwed.vue'
+import { ref, onMounted } from 'vue';
+import houseHoldPayments from './houseHoldPayments.vue';
+import { onRequest } from 'src/utils/onRequest.js';
+import AddhouseHold from './addHouseHold.vue';
+import calculateOwed from 'src/components/accountig/caculateOwed.vue'
+import houseHoldPaymentHistory from './houseHoldPaymentHistory.vue';
 import ParentContacts from './parentContacts.vue';
-
   const houseHoldHistoryOpen = ref(false)
   const houseHoldOpen = ref(false)
   const contactosOpen = ref(false)

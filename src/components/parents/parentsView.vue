@@ -46,13 +46,17 @@
       </template>
 
     </q-table>
+    <HouseHoldPayments v-if="parentOpen" v-model:show-dialog="parentOpen" :houseHold="parentRef" />
+    <HouseHoldPaymentHistory v-if="parentHistoryOpen" v-model:houseHoldHistoryOpen="parentHistoryOpen" :houseHold="parentRef" />
     <AddParent @Submitted="tableRef.requestServerInteraction()" v-if="addParentDialog" :show-dialog="addParentDialog" @update:show-dialog="updateAddParentDiag" :parent="parentRefEdit" />
     </div>
   </template>
-  <script setup>
+<script setup>
   import { ref, onMounted } from 'vue';
   import { onRequest } from 'src/utils/onRequest.js';
   import AddParent from './addParent.vue';
+import HouseHoldPayments from '../houseHold/houseHoldPayments.vue';
+import HouseHoldPaymentHistory from '../houseHold/houseHoldPaymentHistory.vue';
   const parentHistoryOpen = ref(false)
   const parentOpen = ref(false)
   const addParentDialog = ref(false)
@@ -113,4 +117,4 @@
       // get initial data from server (1st page)
       tableRef.value.requestServerInteraction()
     })
-  </script>
+</script>

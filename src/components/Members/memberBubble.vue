@@ -24,6 +24,7 @@ const colors = [
   "light-blue",
 ];
 function getUserLetters(name) {
+  console.log({name})
   let nameSplit = name.split(" ");
   let letter = nameSplit[0].slice(0, 1);
   if (nameSplit.length > 1) {

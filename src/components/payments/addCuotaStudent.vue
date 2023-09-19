@@ -17,6 +17,7 @@
             minimal
             :readonly="cuotaRef.id ? true : false"
           />
+          <q-select style="min-width: 200px;"  v-model="student" :options="students" option-label="Nombre" :option-value="x => x" emit-value map-options label="Estudiante" filled />
           <q-input :readonly="cuotaRef.id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
           <q-input :readonly="cuotaRef.id ? true : false" v-model.number="Monto" type="number" label="Monto" />
           <div>
@@ -29,20 +30,22 @@
   </q-dialog>
 </template>
 <script setup>
-import { toRef, watch } from 'vue';
+import { toRef, ref, watch } from 'vue';
 import { useCuotaStore } from 'src/stores/Cuotas.js';
 import { useQuasar } from 'quasar'
 import { collection, deleteDoc, doc } from 'firebase/firestore';
 import { db } from 'src/boot/vuefire';
 const $q = useQuasar()
 const cuotaStore = useCuotaStore()
-const props = defineProps(['modelValue', 'editCuota'])
-const cuotaRef = toRef(props, 'editCuota')
+const props = defineProps(['modelValue', 'editCuota', 'students', 'houseHold', 'cuotaRef'])
+const cuotaRef = toRef(props, 'cuotaRef')
 const emits = defineEmits(['update:modelValue', 'updatedOrCreated', 'hide'])
-const Periodo = toRef(props.editCuota, 'Periodo')
-const Monto = toRef(props.editCuota, 'Monto')
-const Tipo = toRef(props.editCuota, 'Tipo')
-const Alias = toRef(props.editCuota, 'Alias')
+const Periodo = ref()
+const Monto = ref(0)
+const Alias = ref('')
+const students = toRef(props, 'students')
+const student = ref(null)
+const houseHold = toRef(props, 'houseHold')
 function reset () {
   Periodo.value = {
     from: undefined,
@@ -60,6 +63,7 @@ function dateFromPeriodo (string) {
 }
 async function onSubmit() {
   try {
+    let today = new Date()
     let periodo = { from: dateFromPeriodo(Periodo.value.from), to: dateFromPeriodo(Periodo.value.to)}
     // if(props.editCuota?.id) {
     //   await cuotaStore.set({
@@ -71,23 +75,27 @@ async function onSubmit() {
     //   })
     // } 
     // else {
-      console.log({
+      await cuotaStore.addStudentCuota({
+          cuotaDefault: {
+            Periodo: periodo,
+          Monto: Monto.value,
+          dateIn: today,
+          Alias: Alias.value,
+          },
           Periodo: periodo,
           Monto: Monto.value,
-          dateIn: new Date(),
-          Alias: Alias.value
-
-        })
-        
-      await cuotaStore.add({
-          Periodo: periodo,
-          Monto: Monto.value,
-          dateIn: new Date(),
-          Alias: Alias.value
+          dateIn: today,
+          lastModified: today,
+          Alias: Alias.value,
+          RemainingAmountDue: Monto.value,
+          studentId: student.value.id,
+          Discount: student.value.Discount || 1,
+          houseHold: houseHold.value.id
 
         })
     // }
   } catch (error) {
+    console.error(error)
     return $q.notify({message: "Error al crear o editar la cuota", color: 'red'})
   }
   return afterSubmit()
@@ -103,7 +111,7 @@ async function deleteCuota () {
         // console.log('>>>> OK')
         try {
           console.log(cuotaRef.value.id)
-          await deleteDoc(doc(collection(db, 'cuotas/'),  cuotaRef.value.id)).then(() => $q.notify("cuota eliminada"))
+          await deleteDoc(doc(collection(db, `students/${student.value.id}/cuota_payments`),  cuotaRef.value.id)).then(() => $q.notify("cuota eliminada"))
         } catch (error) {
           $q.notify({message: "Error al eliminar la cuota", color: 'red'})
         } finally {

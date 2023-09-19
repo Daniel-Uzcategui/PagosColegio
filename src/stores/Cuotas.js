@@ -1,16 +1,53 @@
 import { defineStore } from "pinia";
-import { computed } from "vue";
+import { ref } from "vue";
 import { collection, doc, setDoc, query, orderBy, limit, deleteDoc } from "firebase/firestore";
-import { db } from "src/boot/vuefire";
-import { useCollection } from "vuefire";
+import { db, functions } from "src/boot/vuefire";
 import {
   Loading,
 } from 'quasar'
+import { httpsCallable } from "firebase/functions";
 
 export const useCuotaStore = defineStore(
   "Cuotas",
   () => {
     try {
+      const BCV = ref(0)
+      async function getBCV() {
+        if (BCV.value === 0) {
+          const getBCV = httpsCallable(
+            functions,
+            'getBCV'
+          );
+          const result = await getBCV();
+          BCV.value = result.data
+          return result.data;
+        } else {
+          return BCV.value
+        }
+      }
+      async function addStudentCuota(payload) {
+        try {
+          Loading.show()
+
+          let date = new Date()
+          const docRef = doc(collection(db, `/students/${payload.studentId}/cuota_payments`));
+          await setDoc(
+            docRef,
+            {
+              ...payload,
+              id: docRef.id,
+              dateIn: date,
+              lastModified: date,
+            },
+            { merge: true }
+          );
+        } catch (error) {
+          console.error(error);
+          throw error
+        } finally {
+          return Loading.hide()
+        }
+      }
       async function add(payload) {
         try {
           Loading.show()
@@ -68,9 +105,11 @@ export const useCuotaStore = defineStore(
         }
       }
       return {
+        addStudentCuota,
         add,
         set,
-        del
+        del,
+        getBCV
       };
     } catch (error) {
       console.error(error);

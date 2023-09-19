@@ -38,13 +38,11 @@
   },
   });
   const emits = defineEmits(['update:showDialog', 'Submitted'])
-  
-
   const Nombre = toRef(props.parent, 'Nombre');
-const Apellido = toRef(props.parent, 'Apellido');
-const Telefono = toRef(props.parent, 'Telefono');
-const Email = toRef(props.parent, 'Email');
-const ced = toRef(props.parent, 'ced');
+  const Apellido = toRef(props.parent, 'Apellido');
+  const Telefono = toRef(props.parent, 'Telefono');
+  const Email = toRef(props.parent, 'Email');
+  const ced = toRef(props.parent, 'ced');
   async function onSubmit() {
   try {
     if (props.parent.id) {
@@ -54,7 +52,7 @@ const ced = toRef(props.parent, 'ced');
         Apellido: Apellido.value.toUpperCase(),
         Telefono: Telefono.value,
         Email: Email.value,
-        'ced': ced.value,
+        ced: ced.value,
       });
       Notify.create({ message: 'Representante updated', color: 'green' });
     } else {
@@ -64,7 +62,7 @@ const ced = toRef(props.parent, 'ced');
         Apellido: Apellido.value.toUpperCase(),
         Telefono: Telefono.value,
         Email: Email.value,
-        'ced': ced.value,
+        ced: ced.value
       });
       Notify.create({ message: 'Representante added', color: 'green' });
     }

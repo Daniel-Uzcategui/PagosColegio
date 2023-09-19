@@ -1,26 +1,16 @@
 const routes = [
   {
     path: "/",
-    component: () => import("src/layouts/MainLayout.vue"),
+    component: () => import("src/layouts/AuthenticatedLayout.vue"),
     children: [
-      {
-        path: "myboard",
-        component: () => import("pages/myBoard.vue"),
-        props: (route) => ({
-          project: route.query.p,
-          user: route.query.u,
-          invite: route.query.i,
-        }),
-      },
       { path: "cuotas", component: () => import("pages/paymentCuotas.vue") },
       { path: "parents", component: () => import("pages/parentsView.vue") },
       { path: "houseHold", component: () => import("pages/houseHoldView.vue") },
-      { path: "owed", component: () => import("pages/houseHoldOwed.vue") },
+      // { path: "owed", component: () => import("pages/houseHoldOwed.vue") },
+      { path: "students", component: () => import("pages/indexPage.vue") },
+      { path: "reportcaja", component: () => import("pages/reportCaja.vue") }
     ],
   },
-
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: "/:catchAll(.*)*",
     component: () => import("pages/ErrorNotFound.vue"),

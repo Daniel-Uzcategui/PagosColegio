@@ -71,10 +71,14 @@
 import { ref, onMounted, toRef, computed, watch } from 'vue';
 import { runTransaction, doc, addDoc, collection, getDocs, query, where, Timestamp, serverTimestamp, collectionGroup } from 'firebase/firestore';
 import { db } from 'src/boot/vuefire';
+import {generateReceiptLines} from './printFunctions.js'
 import { Money3Component } from 'v-money3'
 import { Notify } from 'quasar';
-import axios from 'axios';
 import {useQuasar} from 'quasar'
+import { useCuotaStore } from 'src/stores/Cuotas';
+import { useUsersStore } from 'src/stores/User'; 
+const getBCV = useCuotaStore().getBCV
+const userStore = useUsersStore()
 const $q = useQuasar()
 const options = ['Punto de venta', 'Efectivo $', 'Efectivo BS', 'Zelle', 'Pago Movil', 'Transferencia', 'Otros']
 const moneyFormatForDirective = {
@@ -124,6 +128,7 @@ onMounted(async () => {
 
 async function submitForm() {
   try {
+    let allPayments =  []
     if (tasaBCV.value.gotvalue === false) {
       throw {message: 'Tasa BCV no cargada porfavor verificar conexión a internet'}
     }
@@ -172,20 +177,22 @@ async function submitForm() {
             });
           }
         });
-        await addDoc(
-          collection(db, `houseHolds/${houseHoldRef.value.id}/payments`),
-          {
+        const paymentData = {
             ...payment.value,
             cuotaInfo: {...cuota, id: cuota.id, student: {...cuota.Student, id: cuota.Student.id}, RemainingAmountDue: updatedRemainingAmountDue},
             Monto: paymentAmount,
             dateIn: serverTimestamp(),
             fechaPago: new Date(fechaPago.value),
             TasaBCV: tasaBCV.value.rateValue,
+            cajaUser: userStore.currentUserDoc,
             MontoTotalBS: parseFloat((paymentAmount * tasaBCV.value.rateValue).toFixed(2)),
             ...(motivoCambio.value.length > 0 ? {Motivo: motivoCambio.value} : {})
           }
+          allPayments.push(paymentData)
+        await addDoc(
+          collection(db, `houseHolds/${houseHoldRef.value.id}/payments`),
+          paymentData
         );
-
       }
     }
     paymentAmounts.value = {};
@@ -194,15 +201,20 @@ async function submitForm() {
       Referencia: '',
       Tipo: 'Punto de venta'
     };
+
+    // Call the createReceipt function to generate a receipt
+
+    
+    // Emit the submitted event and pass the receipt data
+    emits('submitted', allPayments);
     emits('update:showDialog', false);
-    emits('submitted');
+    console.log(generateReceiptLines(allPayments, houseHoldRef.value))
     return Notify.create({message: `Pago por $${MontoTotal.value}, registrado`, color:'green'})
   } catch (error) {
     console.error(error);
     Notify.create({message: error.message, color:'red'})
   }
 }
-
 async function isReferenciaNotUnique(referencia) {
   const paymentsRef = collectionGroup(db, 'payments');
   const q = query(paymentsRef, where('Referencia', '==', referencia));
@@ -215,8 +227,9 @@ const loadingTasa = ref(false)
 async function setTasa() {
   try {
     loadingTasa.value = true
-    await axios.get('https://us-central1-api-dolar.cloudfunctions.net/apiDolar/bcv')
-            .then(e => { tasaBCV.value = { rateValue: e?.data?.[0].value, currency: 'Bs', gotvalue: true } }).catch(e => console.error('error fetching data ratesApi', { e }))
+    const rateValue = await getBCV().catch(e => console.error('error fetching data ratesApi', { e }))
+    console.log({rateValue})
+    tasaBCV.value = { rateValue, currency: 'Bs', gotvalue: true }
   } catch (error) {
     Notify.create({message:"Falla en conexión con el banco central, verificar conexión a internet", color: 'red'})
   } finally {
