@@ -4,8 +4,6 @@
       <ToolbarIndex></ToolbarIndex>
       <q-tabs v-model="tab" align="center" class="text-white">
         <q-route-tab name="cuotas" label="Cuotas" to="/cuotas" />
-        <q-route-tab name="parents" label="Representantes" to="/parents" />
-        <q-route-tab name="houseHold" label="Familias" to="/houseHold" />
         <q-route-tab name="students" label="Estudiantes" to="/students" />
         <q-route-tab name="reportcaja" label="Reporte Caja" to="/reportcaja" />
       </q-tabs>

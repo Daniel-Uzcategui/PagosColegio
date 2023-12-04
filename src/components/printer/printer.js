@@ -1,88 +1,88 @@
 import { Dialog } from 'quasar'
 
 async function requestDevice (SERVICE) {
-  try {
-    return new Promise(async (resolve, reject) => {
-      Dialog.create({ message: 'Impresora no conectada presiona ok para conectarla', }).onOk(async()=> {
-        await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE]}] }).then((x)=> resolve(x))
-      }).onCancel(()=> {
-        reject()
-        throw 'User Canceled'
-      })
-    })
-  } catch (error) {
-    throw 'Error while connecting to printer'
-  }
+try {
+return new Promise(async (resolve, reject) => {
+Dialog.create({ message: 'Impresora no conectada presiona ok para conectarla', }).onOk(async()=> {
+await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE]}] }).then((x)=> resolve(x))
+}).onCancel(()=> {
+reject()
+throw 'User Canceled'
+})
+})
+} catch (error) {
+throw 'Error while connecting to printer'
+}
 }
 
 export const printRequest = async function (command, device = {}) {
-  console.log({ device: device })
-  if (device.gatt !== undefined && device.gatt.connect) {
-    return printCommand(command, device)
-  }
-  var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
-  let dev = await requestDevice(SERVICE)
-  return printCommand(command, dev)
+console.log('printRequest',{ device: device })
+if (device.gatt !== undefined && device.gatt.connect) {
+return printCommand(command, device)
+}
+var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
+let dev = await requestDevice(SERVICE)
+return printCommand(command, dev)
 }
 
 const printCommand = async function (command, device) {
 
-  var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
-  var WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
-  let gatt
-  try {
-    // console.log({device})
-    let printerDevice = device
-    gatt = printerDevice.gatt
-    let server = await gatt.connect()
-    let service = await server.getPrimaryService(SERVICE)
-    let channel = await service.getCharacteristic(WRITE)
-    let qr = Uint8Array.from(printQR(command).split('').map(c => {
-      let code = c.charCodeAt(0)
-      return translate[code] || code
-    }))
-    await batchWrite(channel, qr)
-    return gatt
-  } catch (error) {
-    console.error(error)
-  }
+var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
+var WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
+let gatt
+try {
+console.log('printcommand', {device, command})
+let printerDevice = device
+gatt = printerDevice.gatt
+let server = await gatt.connect()
+let service = await server.getPrimaryService(SERVICE)
+let channel = await service.getCharacteristic(WRITE)
+let qr = Uint8Array.from(printQR(command).split('').map(c => {
+let code = c.charCodeAt(0)
+return translate[code] || code
+}))
+await batchWrite(channel, qr)
+return gatt
+} catch (error) {
+console.error(error)
+}
 
 }
 
 export const print = async function (base64) {
-  // console.log({qr: qrcode.value.$el})
-  // return printQR ()
-  var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
-  var WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
+// console.log({qr: qrcode.value.$el})
+// return printQR ()
+var SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
+var WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
 
-  var DATA =  '________________________________' + '\x0A' + '\n\n\n';
-  // + '\x1B' + '\x61' + '\x31'                                              // center align
-  // // + '\x1D' + '\x21' + '\x11' + 'Hello\nBluetooth!\n\n'                    // double font size
-  // + '\x1D' + '\x21' + '\x00' + '... from your friends\nat https://qz.io'  // normal font size
-  // // + '\n\n\n\n\n\n\n';                                                  // feed paper
-  let gatt
-  try {
-    printerDevice = await requestDevice(SERVICE)
-    gatt = printerDevice.gatt
-    let server = await gatt.connect()
-    let service = await server.getPrimaryService(SERVICE)
-    let channel = await service.getCharacteristic(WRITE)
-    // let qr = new TextEncoder().encode(printQR())
-    let qr = Uint8Array.from(printQR().split('').map(c => {
-      let code = c.charCodeAt(0)
-      return translate[code] || code
-    }))
-    // return channel.writeValue(new TextEncoder("cp850").encode(DATA))
-    return batchWrite(channel, qr)
-  } catch (error) {
-    console.error(error)
-  }
+var DATA =  '________________________________' + '\x0A' + '\n\n\n';
+// + '\x1B' + '\x61' + '\x31'                                              // center align
+// // + '\x1D' + '\x21' + '\x11' + 'Hello\nBluetooth!\n\n'                    // double font size
+// + '\x1D' + '\x21' + '\x00' + '... from your friends\nat https://qz.io'  // normal font size
+// // + '\n\n\n\n\n\n\n';                                                  // feed paper
+let gatt
+try {
+printerDevice = await requestDevice(SERVICE)
+gatt = printerDevice.gatt
+let server = await gatt.connect()
+let service = await server.getPrimaryService(SERVICE)
+let channel = await service.getCharacteristic(WRITE)
+// let qr = new TextEncoder().encode(printQR())
+let qr = Uint8Array.from(printQR().split('').map(c => {
+let code = c.charCodeAt(0)
+return translate[code] || code
+}))
+// return channel.writeValue(new TextEncoder("cp850").encode(DATA))
+return batchWrite(channel, qr)
+} catch (error) {
+console.error(error)
+}
 
 }
 
 async function batchWrite (channel, qr) {
-  var index = 0;
-  return sendNextImageDataBatch(channel, qr)
+var index = 0;
+return sendNextImageDataBatch(channel, qr)
 
 async function sendNextImageDataBatch(channel, data) {
 // Can only write 512 bytes at a time to the characteristic
@@ -127,56 +127,36 @@ var translate = {
 }
 
 export async function printDialog(command) {
-  try {
-    return new Promise(async (resolve, reject) => {
-      Dialog.create({ message: 'Do you want to print using Bluetooth or USB?', options: {
-        type: 'radio',
-        model: 'USB',
-        // inline: true
-        items: [
-          { label: 'Bluetooth', value: 'Bluetooth', color: 'secondary' },
-          { label: 'USB', value: 'USB' },
-        ]
-      } }).onOk(async (selectedOption) => {
-        if (selectedOption === 'Bluetooth') {
-          await printRequest(command);
-        } else if (selectedOption === 'USB') {
-          let device = await requestDeviceUSB();
-          return printCommandUSB(command, device);
-        }
-      }).onCancel(() => {
-        reject();
-        throw 'User Canceled';
-      });
-    });
-  } catch (error) {
-    throw 'Error while printing';
-  }
+try {
+return printRequest(command);
+} catch (error) {
+throw 'Error while printing';
+}
 }
 
 async function requestDeviceUSB() {
-  try {
-    const device = await navigator.usb.requestDevice({ filters: [{ /* Add filters here */ }] });
-    // The user has granted permission to access the selected USB device
-    // console.log('User has granted permission to access USB device:', device);
-    return device
-  } catch (error) {
-    // The user did not grant permission to access any USB devices
-    console.log('User did not grant permission to access any USB devices');
-  }
+try {
+const device = await navigator.usb.requestDevice({ filters: [{ /* Add filters here */ }] });
+// The user has granted permission to access the selected USB device
+// console.log('User has granted permission to access USB device:', device);
+return device
+} catch (error) {
+// The user did not grant permission to access any USB devices
+console.log('User did not grant permission to access any USB devices');
+}
 }
 
 async function printCommandUSB(command, device) {
-  try {
-    await device.open();
-    // Select the appropriate configuration and interface here
-    await device.selectConfiguration(1);
-    await device.claimInterface(0);
-    // Send the print command to the printer
-    await device.transferOut(1, command);
-  } catch (error) {
-    console.error(error);
-  }
+try {
+await device.open();
+// Select the appropriate configuration and interface here
+await device.selectConfiguration(1);
+await device.claimInterface(0);
+// Send the print command to the printer
+await device.transferOut(1, command);
+} catch (error) {
+console.error(error);
+}
 }
 
 // async function requestDeviceSerial() {

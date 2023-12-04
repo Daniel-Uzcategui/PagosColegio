@@ -45,5 +45,6 @@ export const generateReceiptLines = async (groupedPayments, houseHold) => {
       receiptLines += receiptLine;
     receiptLines += '{w:auto}\n';
     // receiptLines += `Deuda Restante => | ${houseHold.amountOwed.toFixed(2)}$\n\n`;
+    console.log({receiptLines})
     return printDialog(receiptLines);
   }

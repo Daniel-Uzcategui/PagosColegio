@@ -208,7 +208,7 @@ async function submitForm() {
     // Emit the submitted event and pass the receipt data
     emits('submitted', allPayments);
     emits('update:showDialog', false);
-    console.log(generateReceiptLines(allPayments, houseHoldRef.value))
+    await generateReceiptLines(allPayments, houseHoldRef.value)
     return Notify.create({message: `Pago por $${MontoTotal.value}, registrado`, color:'green'})
   } catch (error) {
     console.error(error);
