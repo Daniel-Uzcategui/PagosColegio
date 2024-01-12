@@ -16,10 +16,11 @@
   "dependencies": {
     "@quasar/extras": "^1.16.4",
     "@vitejs/plugin-vue": "^4.0.0",
-    "@vueauth/firebase": "^1.0.0-alpha.20",
     "axios": "^0.21.1",
-    "firebase": "^9.0.0",
-    "firebase-functions": "^4.2.0",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "file-saver": "^2.0.5",
+    "jwt-decode": "^4.0.0",
     "mongodb": "^6.3.0",
     "pinia": "^2.0.11",
     "pinia-plugin-persistedstate": "^3.1.0",
@@ -30,12 +31,11 @@
     "vue": "^3.0.0",
     "vue-i18n": "^9.0.0",
     "vue-router": "^4.0.0",
-    "vuefire": "^3.1.13"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@intlify/vite-plugin-vue-i18n": "^3.3.1",
     "@quasar/app-vite": "^1.4.3",
-    "@vueauth/quasar-app-extension-auth": "^1.0.0-alpha.29",
     "autoprefixer": "^9",
     "eslint": "^8.10.0",
     "eslint-config-prettier": "^8.1.0",

@@ -1,0 +1,30 @@
+<template>
+        <q-item-section @click="downloadTemplate">Descargar plantilla de estudiante</q-item-section>
+</template>
+
+<script>
+export default {
+    methods: {
+        downloadTemplate() {
+            const columnNames = {
+                Nombre: "John",
+                Seccion: "A",
+                ced: "12345678",
+                FechaInicioCuota: "2022-01-01",
+                Apellido: "Doe",
+                Grado: 10,
+            };
+
+            const csvContent = Object.keys(columnNames).join(',') + '\n' + Object.values(columnNames).join(',');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'template.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+}
+</script>

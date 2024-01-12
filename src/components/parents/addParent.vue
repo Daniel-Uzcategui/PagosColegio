@@ -45,9 +45,9 @@
   const ced = toRef(props.parent, 'ced');
   async function onSubmit() {
   try {
-    if (props.parent.id) {
+    if (props.parent._id) {
       // Update existing parent
-      await updateDoc(doc(db, 'parents', props.parent.id), {
+      await updateDoc(doc(db, 'parents', props.parent._id), {
         Nombre: Nombre.value.toUpperCase(),
         Apellido: Apellido.value.toUpperCase(),
         Telefono: Telefono.value,

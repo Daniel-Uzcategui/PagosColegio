@@ -25,7 +25,7 @@ export const handleCuota = onDocumentWritten(
         const studentData = studentDoc.data();
         await admin
           .firestore()
-          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .doc(`students/${studentData._id}/cuota_payments/${event.params.cuotaId}`)
           .update(cuota);
       }
     } else if (event.data.after.data()) {
@@ -34,7 +34,7 @@ export const handleCuota = onDocumentWritten(
         const studentData = studentDoc.data();
         await admin
           .firestore()
-          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .doc(`students/${studentData._id}/cuota_payments/${event.params.cuotaId}`)
           .set(cuota);
       }
     }  else if (!event.data.after.exists()) {
@@ -43,7 +43,7 @@ export const handleCuota = onDocumentWritten(
         const studentData = studentDoc.data();
         await admin
           .firestore()
-          .doc(`students/${studentData.id}/cuota_payments/${event.params.cuotaId}`)
+          .doc(`students/${studentData._id}/cuota_payments/${event.params.cuotaId}`)
           .delete();
       }
     }
@@ -66,13 +66,13 @@ export const calculateAmountOwedByAllHouseholds = onCall(
         let amountOwed = 0;
         const studentsSnapshot = await admin
           .firestore()
-          .collection(`/students`).where('houseHold', '==', houseHoldDoc.id)
+          .collection(`/students`).where('houseHold', '==', houseHoldDoc._id)
           .get();
         for (const studentDoc of studentsSnapshot.docs) {
           const studentData = studentDoc.data();
           const cuotasSnapshot = await admin
             .firestore()
-            .collection(`students/${studentData.id}/cuota_payments`)
+            .collection(`students/${studentData._id}/cuota_payments`)
             .get();
           for (const cuotaDoc of cuotasSnapshot.docs) {
             const cuotaData = cuotaDoc.data();
@@ -83,7 +83,7 @@ export const calculateAmountOwedByAllHouseholds = onCall(
         // Update the amount owed in the household's document
         await admin
           .firestore()
-          .doc(`houseHolds/${houseHoldDoc.id}`)
+          .doc(`houseHolds/${houseHoldDoc._id}`)
           .update({ amountOwed });
 
         // Add the household's amount owed to the total amount owed

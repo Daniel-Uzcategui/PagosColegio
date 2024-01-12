@@ -80,7 +80,7 @@
       last: ''
     })
     const serverPagination = ref({
-      callerCollection: "houseHolds/" + props.houseHold.id +"/payments",
+      callerCollection: "houseHolds/" + props.houseHold._id +"/payments",
       defaultColumn: "dateIn",
       lastDocument: null,
       loading: false,

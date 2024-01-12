@@ -1,5 +1,5 @@
 <template>
-    <div>
+  <div>
     <q-table
       flat bordered
       ref="tableRef"
@@ -8,126 +8,129 @@
       :columns="columns"
       row-key="id"
       v-model:pagination="pagination"
-
       :loading="serverPagination.loading"
       :filter="filter"
       binary-state-sort
       @request="(e)=> onRequest(e,pagination, serverPagination, rows)"
     >
       <template v-slot:top-right>
-        <div class="row justify-end full-width">
-          <q-btn class="q-ma-md"  color="primary" icon="add" label="Añadir" @click="getCuotaInfo()" />
-          <q-btn size="md" flat icon="event" class="cursor-pointer">
-
-            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date minimal @update:model-value="removeRange" :model-value="filter" range>
-                <div class="row items-center justify-end">
-                  <q-btn v-close-popup label="Close" color="primary" flat />
-                </div>
-              </q-date>
-            </q-popup-proxy>
-          </q-btn>
-        </div>
-        <div>
-          <p>Filtros:</p>
-          <q-option-group
-            v-model="group"
-            color="secondary"
-            :options="cuotasOptions"
-            inline
-            @update:model-value="changeFilter"
-          />
-        </div>
+        <q-btn color="secondary" icon="add" label="Añadir cuotas a estudiantes" @click="addBatchCuotaDialog = true" />
+        <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
       </template>
-      <template v-slot:body-cell-PeriodoFrom="props">
-        <q-btn class="full-width" color="primary" no-caps @click="getCuotaInfo(props.row)"> {{ toDateLocate(props.row.Periodo.from)}} </q-btn>
+      <template v-slot:body-cell-Periodo="props">
+        <q-td :props="props">
+          <q-list separator>
+            <q-item clickable v-ripple>
+              <q-item-section>{{formatDate(props.value.from)}}</q-item-section>
+              <q-item-section>{{formatDate(props.value.to)}}</q-item-section>
+            </q-item>
+          </q-list>
+        </q-td>
       </template>
-
+      <template v-slot:body-cell-edit="props">
+        <q-td class="column items-center">
+          <q-btn label="Eliminar" color="negative" icon="delete" @click="deleteCuotaBatch(props.row)" />
+        </q-td>
+      </template>
     </q-table>
-    <cuotasEdit @hide="editCuota = undefined" v-model="cuotaOpen" :editCuota="editCuota" @updatedOrCreated="tableRef.requestServerInteraction()" />
+    <q-dialog v-model="addBatchCuotaDialog">
+      <AddBatchCuota :show-dialog="addBatchCuotaDialog" @update:show-dialog="updateAddBatchCuotaDiag" />
+    </q-dialog>
   </div>
-  </template>
-  <script setup>
-  import { ref, onMounted, computed } from 'vue';
-  import cuotasEdit from './cuotasEdit.vue';
-  import { onRequest } from 'src/utils/onRequest';
-  import { useDocument } from 'vuefire';
-  import { collection, doc } from 'firebase/firestore';
-  import { db } from 'src/boot/vuefire';
-  const tableRef = ref()
-  const cuotaOpen = ref(false)
-  const cuotasOptionsDoc = useDocument(doc(collection(db, 'school'), 'cuotas'))
-  const cuotasOptions = computed(() => cuotasOptionsDoc.value?.options || [])
-  const cuotaDefault = {
-        Alias: '',
-        Periodo: {
-          from: new Date(),
-          to: new Date()
-        },
-        Monto: 0,
-      }
-  const editCuota = ref(cuotaDefault)
-  const rows = ref([])
-  const group = ref()
-  function changeFilter (value) {
-    console.log({value})
-    if (value === 'All') {
-      serverPagination.value.extraFilter = undefined
-    } else {
-      serverPagination.value.extraFilter = {
-        key: 'Tipo',
-        value: value,
-        condition: '=='
-      }
-    }
-    tableRef.value.requestServerInteraction()
+</template>
 
-  }
-
-  function getCuotaInfo(cuota) {
-    console.log({cuota})
-    cuotaOpen.value = true
-    if (cuota) {
-        editCuota.value = cuota
-        return
-    }
-    editCuota.value = cuotaDefault
-  }
-  const columns = [
-    { "name": "PeriodoFrom", "label": "Periodo Desde", "field": row => toDateLocate(row.Periodo.from), "align": "left", "sortable": true },
-    { "name": "PeriodoTo", "label": "Periodo Hasta", "field": row => toDateLocate(row.Periodo.to), "align": "left", "sortable": true },
-    { "name": "Monto", "label": "Monto", "field": "Monto", "align": "left", "sortable": true },
-  ]
-  function toDateLocate (date) {
-    return date.toDate().toLocaleDateString("es-MX")
-  }
-  function removeRange(value,reason) {
-    console.log(value,reason)
-    if (reason === 'remove-range') {
-      console.log('Setting value')
-      return filter.value = ''
-    }
-    filter.value = value
-  }
-    const filter = ref('')
-    const pagination = ref({
-      sortBy: 'desc',
-      descending: true,
-      page: 1,
-      rowsPerPage: 3,
-      rowsNumber: 10,
-      first: '',
-      last: ''
-    })
-    const serverPagination = ref({
-      callerCollection: "cuotas",
-      defaultColumn: "PeriodoFrom",
-      lastDocument: null,
-      loading: false,
-      extraFilter: undefined
-    })
-    onMounted(() => {
-      // get initial data from server (1st page)
+<script setup>
+import { ref, onMounted, toRef } from 'vue';
+import { onRequest } from 'src/utils/onRequest.js';
+import AddBatchCuota from './addCuotaBatch.vue';
+import { useCuotaStore }  from 'stores/Cuotas';
+import { format } from 'date-fns';
+import { api } from 'src/boot/axios';
+import { useQuasar } from 'quasar';
+const $q = useQuasar();
+const cuotaStore = useCuotaStore();
+const addBatchCuotaDialog = ref(false)
+const userMap = ref({})
+const cuotaDefault = {
+  Alias: '',
+  Monto: 0,
+  Periodo: { from: undefined, to: undefined },
+  userId: ''
+}
+const cuotaRefEdit = ref(cuotaDefault)
+function deleteCuotaBatch(cuota){
+  // add prompt to confirm delete
+  $q.dialog({
+    title: 'Confirmar',
+    message: `¿Estás seguro que deseas eliminar la cuota ${cuota.Alias}?, esta acción no se puede deshacer, se eliminarán todas las cuotas de los estudiantes que tengan esta cuota.`,
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    // OK
+    const response = await cuotaStore.deleteCuotaBatch(cuota)
+    if(response) {
       tableRef.value.requestServerInteraction()
-    })
-  </script>
+    }
+  })
+
+}
+function updateAddBatchCuotaDiag (value) {
+  addBatchCuotaDialog.value = value
+  if (value === false) {
+    cuotaRefEdit.value = cuotaDefault
+  }
+}
+const formatDate = (value) => {
+if (!value) return '';
+return format(new Date(value), 'dd/MM/yyyy');
+};
+const columns = [
+  { "name": "Alias", "label": "ALIAS", "field": "Alias", "align": "left", "sortable": true },
+  { "name": "Monto", "label": "MONTO", "field": "Monto", "align": "left", "sortable": true },
+  { "name": "Periodo", "label": "PERIODO", "field": "Periodo", "align": "center", "sortable": true },
+  { name: 'userId', required: true, label: 'Usuario Caja', align: 'left', field: getEmail },
+  { name: 'edit', label: 'Eliminar', align: 'center', sortable: false },
+]
+function getEmail(row) {
+try {
+return userMap.value[row.userId].email
+} catch (error) {
+return ""
+}
+}
+const tableRef = ref()
+const rows = toRef(cuotaStore, 'list')
+const filter = ref('')
+const pagination = ref({
+  sortBy: 'desc',
+  descending: false,
+  page: 1,
+  rowsPerPage: 3,
+  rowsNumber: 10,
+  first: '',
+  last: ''
+})
+const serverPagination = ref({
+  callerCollection: "cuotas",
+  defaultColumn: "Alias",
+  lastDocument: null,
+  loading: false,
+  extraFilter: undefined
+})
+async function fetchUsers() {
+const response = await api.get('/users');
+// Create a map of users
+for (const user of response.data) {
+userMap.value[user._id] = user;
+}
+}
+onMounted(async() => {
+  // get initial data from server (1st page)
+  await fetchUsers()
+  tableRef.value.requestServerInteraction()
+})
+</script>

@@ -22,11 +22,11 @@ export const handleCuota = onDocumentWritten(
         let batch = admin.firestore().batch();
         let count = 0;
         for (const studentDoc of studentsSnapshot.docs) {
-          const cuotaRef = admin.firestore().collection(`students/${studentDoc.id}/cuota_payments`).doc();
+          const cuotaRef = admin.firestore().collection(`students/${studentDoc._id}/cuota_payments`).doc();
           const student = studentDoc.data();
           const cuotaDiscount = student.Discount || 1;
           const newAmount = cuotaDiscount * cuotaData.Monto;
-          batch.set(cuotaRef, {...cuotaData, cuotaDefault: cuotaData, Monto: newAmount, Discount: cuotaDiscount, RemainingAmountDue: newAmount, cuotaId: event.params.cuotaId, houseHold: student.houseHold, studentId: studentDoc.id});
+          batch.set(cuotaRef, {...cuotaData, cuotaDefault: cuotaData, Monto: newAmount, Discount: cuotaDiscount, RemainingAmountDue: newAmount, cuotaId: event.params.cuotaId, houseHold: student.houseHold, studentId: studentDoc._id});
           count++;
           if (count === 500) {
             await batch.commit();
@@ -92,7 +92,7 @@ async function updateHouseHoldById(houseHoldId) {
   for (const studentDoc of studentsSnapshot.docs) {
     const cuotasSnapshot = await admin
         .firestore()
-        .collection(`students/${studentDoc.id}/cuota_payments`)
+        .collection(`students/${studentDoc._id}/cuota_payments`)
         .where("RemainingAmountDue", ">", 0)
         .get();
     for (const cuotaDoc of cuotasSnapshot.docs) {

@@ -3,7 +3,7 @@
     @update:model-value="(e) => $emit('update:modelValue', e)">
     <q-card class="full-width">
       <div v-if="cuotaRef" class="text-center text-bold">
-        {{ cuotaRef.id && cuotaRef.Periodo.from ? 'Viendo cuota: ' + cuotaRef.Periodo.from?.toDate?.().toLocaleDateString("es-MX") : 'Creando Cuota' }}
+        {{ cuotaRef._id && cuotaRef.Periodo.from ? 'Viendo cuota: ' + cuotaRef.Periodo.from?.toDate?.().toLocaleDateString("es-MX") : 'Creando Cuota' }}
 
       </div>
         <q-form
@@ -15,14 +15,13 @@
             mask="MM/DD/YYYY"
             range
             minimal
-            :readonly="cuotaRef.id ? true : false"
+            :readonly="cuotaRef._id ? true : false"
           />
-          <q-select style="min-width: 200px;"  v-model="student" :options="students" option-label="Nombre" :option-value="x => x" emit-value map-options label="Estudiante" filled />
-          <q-input :readonly="cuotaRef.id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
-          <q-input :readonly="cuotaRef.id ? true : false" v-model.number="Monto" type="number" label="Monto" />
+          <q-input :readonly="cuotaRef._id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
+          <q-input :readonly="cuotaRef._id ? true : false" v-model.number="Monto" type="number" label="Monto" />
           <div>
-            <q-btn v-if="cuotaRef.id ? false : true" class="q-ma-md" label="Submit" type="submit" color="primary"/>
-            <q-btn v-if="cuotaRef.id ? true : false" class="q-ma-md" color="red" icon="delete" label="Borrar" @click="deleteCuota" />
+            <q-btn v-if="cuotaRef._id ? false : true" class="q-ma-md" label="Submit" type="submit" color="primary"/>
+            <q-btn v-if="cuotaRef._id ? true : false" class="q-ma-md" color="red" icon="delete" label="Borrar" @click="deleteCuota" />
             <!-- <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" /> -->
           </div>
         </q-form>
@@ -33,19 +32,14 @@
 import { toRef, ref, watch } from 'vue';
 import { useCuotaStore } from 'src/stores/Cuotas.js';
 import { useQuasar } from 'quasar'
-import { collection, deleteDoc, doc } from 'firebase/firestore';
-import { db } from 'src/boot/vuefire';
 const $q = useQuasar()
 const cuotaStore = useCuotaStore()
-const props = defineProps(['modelValue', 'editCuota', 'students', 'houseHold', 'cuotaRef'])
+const props = defineProps(['modelValue', 'editCuota', 'studentRef', 'houseHold', 'cuotaRef'])
 const cuotaRef = toRef(props, 'cuotaRef')
 const emits = defineEmits(['update:modelValue', 'updatedOrCreated', 'hide'])
 const Periodo = ref()
 const Monto = ref(0)
 const Alias = ref('')
-const students = toRef(props, 'students')
-const student = ref(null)
-const houseHold = toRef(props, 'houseHold')
 function reset () {
   Periodo.value = {
     from: undefined,
@@ -65,16 +59,8 @@ async function onSubmit() {
   try {
     let today = new Date()
     let periodo = { from: dateFromPeriodo(Periodo.value.from), to: dateFromPeriodo(Periodo.value.to)}
-    // if(props.editCuota?.id) {
-    //   await cuotaStore.set({
-    //     id: props.editCuota.id,
-    //     Periodo: periodo,
-    //     Monto: Monto.value,
-    //     lastChange: new Date(),
-    //     Alias: Alias.value
-    //   })
-    // } 
-    // else {
+    const Discount = props.studentRef.Discount || 1
+    const monto = parseFloat((Monto.value * Discount).toFixed(2))
       await cuotaStore.addStudentCuota({
           cuotaDefault: {
             Periodo: periodo,
@@ -83,15 +69,14 @@ async function onSubmit() {
           Alias: Alias.value,
           },
           Periodo: periodo,
-          Monto: Monto.value,
+          Monto: monto,
           dateIn: today,
           lastModified: today,
           Alias: Alias.value,
-          RemainingAmountDue: Monto.value,
-          studentId: student.value.id,
-          Discount: student.value.Discount || 1,
-          houseHold: houseHold.value.id
-
+          RemainingAmountDue: monto,
+          studentId: props.studentRef._id,
+          totalPaid: 0,
+          Discount
         })
     // }
   } catch (error) {
@@ -108,10 +93,8 @@ async function deleteCuota () {
         cancel: true,
         persistent: true
       }).onOk(async () => {
-        // console.log('>>>> OK')
         try {
-          console.log(cuotaRef.value.id)
-          await deleteDoc(doc(collection(db, `students/${student.value.id}/cuota_payments`),  cuotaRef.value.id)).then(() => $q.notify("cuota eliminada"))
+          await deleteDoc(doc(collection(db, `students/${props.studentRef._id}/cuota_payments`),  cuotaRef.value._id)).then(() => $q.notify("cuota eliminada"))
         } catch (error) {
           $q.notify({message: "Error al eliminar la cuota", color: 'red'})
         } finally {
@@ -125,25 +108,9 @@ async function deleteCuota () {
   }
 }
 function afterSubmit () {
-  $q.notify(props.editCuota?.id ? "Cuota Editada" :"Cuota Creada")
+  $q.notify(props.editCuota?._id ? "Cuota Editada" :"Cuota Creada")
   emits('update:modelValue')
   emits('updatedOrCreated')
 }
-watch(cuotaRef, ()=> {
-  let cuota = cuotaRef.value
-  if(cuota) {
-     Periodo.value = {from: cuota.Periodo.from?.toDate().toLocaleDateString('en-US', {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}), to: cuota.Periodo.to?.toDate().toLocaleDateString('en-US', {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-})}
-     Monto.value = cuota.Monto
-     Alias.value = cuota.Alias
-  }
-  console.log(Periodo.value)
-})
+
 </script>

@@ -16994,12 +16994,12 @@ var qrcode = function() {
       // Compose alt property surrogate
       alt = (typeof alt === 'string') ? {text: alt} : alt || {};
       alt.text = alt.text || null;
-      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+      alt._id = (alt.text) ? alt._id || 'qrcode-description' : null;
 
       // Compose title property surrogate
       title = (typeof title === 'string') ? {text: title} : title || {};
       title.text = title.text || null;
-      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+      title._id = (title.text) ? title._id || 'qrcode-title' : null;
 
       var size = _this.getModuleCount() * cellSize + margin * 2;
       var c, mc, r, mr, qrSvg='', rect;
@@ -17012,11 +17012,11 @@ var qrcode = function() {
       qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
       qrSvg += ' preserveAspectRatio="xMinYMin meet"';
       qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
-          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+          escapeXml([title._id, alt._id].join(' ').trim() ) + '"' : '';
       qrSvg += '>';
-      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title._id) + '">' +
           escapeXml(title.text) + '</title>' : '';
-      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt._id) + '">' +
           escapeXml(alt.text) + '</description>' : '';
       qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
       qrSvg += '<path d="';

@@ -1,7 +1,7 @@
 !-- src/App.vue -->
 <script setup>
-import { authenticateRoutes } from "@vueauth/quasar-ui-auth";
-authenticateRoutes();
+// import { authenticateRoutes } from "@vueauth/quasar-ui-auth";
+// authenticateRoutes();
 </script>
 
 <template>

@@ -1,4 +1,4 @@
-import { getCurrentUser } from "vuefire";
+// import { getCurrentUser } from "vuefire";
 import { route } from "quasar/wrappers";
 import {
   createRouter,
@@ -7,7 +7,7 @@ import {
   createWebHashHistory,
 } from "vue-router";
 import routes from "./routes";
-import { useUsersStore } from "src/stores/User";
+// import { useUsersStore } from "src/stores/User";
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -33,13 +33,13 @@ export default route(async function (/* { store, ssrContext } */) {
     // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
-  Router.beforeEach(async () => {
-    const user = useUsersStore();
-    let currentUser = await getCurrentUser();
-    user.currentUser = currentUser;
-    if (user.selectedUser?.uid === "") {
-      user.selectedUser = currentUser;
-    }
-  });
+  // Router.beforeEach(async () => {
+  //   const user = useUsersStore();
+  //   let currentUser = await user.getCurrentUser();
+  //   user.currentUser = currentUser;
+  //   if (user.selectedUser?.uid === "") {
+  //     user.selectedUser = currentUser;
+  //   }
+  // });
   return Router;
 });

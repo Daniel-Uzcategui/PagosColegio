@@ -3,7 +3,7 @@
     @update:model-value="(e) => $emit('update:modelValue', e)">
     <q-card class="full-width">
       <div v-if="cuotaRef" class="text-center text-bold">
-        {{ cuotaRef.id && cuotaRef.Periodo.from ? 'Viendo cuota: ' + cuotaRef.Periodo.from?.toDate?.().toLocaleDateString("es-MX") : 'Creando Cuota' }}
+        {{ cuotaRef._id && cuotaRef.Periodo.from ? 'Viendo cuota: ' + cuotaRef.Periodo.from?.toDate?.().toLocaleDateString("es-MX") : 'Creando Cuota' }}
 
       </div>
         <q-form
@@ -15,13 +15,13 @@
             mask="MM/DD/YYYY"
             range
             minimal
-            :readonly="cuotaRef.id ? true : false"
+            :readonly="cuotaRef._id ? true : false"
           />
-          <q-input :readonly="cuotaRef.id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
-          <q-input :readonly="cuotaRef.id ? true : false" v-model.number="Monto" type="number" label="Monto" />
+          <q-input :readonly="cuotaRef._id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
+          <q-input :readonly="cuotaRef._id ? true : false" v-model.number="Monto" type="number" label="Monto" />
           <div>
-            <q-btn v-if="cuotaRef.id ? false : true" class="q-ma-md" label="Submit" type="submit" color="primary"/>
-            <q-btn v-if="cuotaRef.id ? true : false" class="q-ma-md" color="red" icon="delete" label="Borrar" @click="deleteCuota" />
+            <q-btn v-if="cuotaRef._id ? false : true" class="q-ma-md" label="Submit" type="submit" color="primary"/>
+            <q-btn v-if="cuotaRef._id ? true : false" class="q-ma-md" color="red" icon="delete" label="Borrar" @click="deleteCuota" />
             <!-- <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" /> -->
           </div>
         </q-form>
@@ -61,9 +61,9 @@ function dateFromPeriodo (string) {
 async function onSubmit() {
   try {
     let periodo = { from: dateFromPeriodo(Periodo.value.from), to: dateFromPeriodo(Periodo.value.to)}
-    // if(props.editCuota?.id) {
+    // if(props.editCuota?._id) {
     //   await cuotaStore.set({
-    //     id: props.editCuota.id,
+    //     id: props.editCuota._id,
     //     Periodo: periodo,
     //     Monto: Monto.value,
     //     lastChange: new Date(),
@@ -102,8 +102,8 @@ async function deleteCuota () {
       }).onOk(async () => {
         // console.log('>>>> OK')
         try {
-          console.log(cuotaRef.value.id)
-          await deleteDoc(doc(collection(db, 'cuotas/'),  cuotaRef.value.id)).then(() => $q.notify("cuota eliminada"))
+          console.log(cuotaRef.value._id)
+          await deleteDoc(doc(collection(db, 'cuotas/'),  cuotaRef.value._id)).then(() => $q.notify("cuota eliminada"))
         } catch (error) {
           $q.notify({message: "Error al eliminar la cuota", color: 'red'})
         } finally {
@@ -117,7 +117,7 @@ async function deleteCuota () {
   }
 }
 function afterSubmit () {
-  $q.notify(props.editCuota?.id ? "Cuota Editada" :"Cuota Creada")
+  $q.notify(props.editCuota?._id ? "Cuota Editada" :"Cuota Creada")
   emits('update:modelValue')
   emits('updatedOrCreated')
 }

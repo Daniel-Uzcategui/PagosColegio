@@ -7,7 +7,7 @@
 
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
-
+require('dotenv').config()
 const { configure } = require("quasar/wrappers");
 const path = require("path");
 // const polyfill = require("@esbuild-plugins/node-globals-polyfill");
@@ -30,7 +30,7 @@ module.exports = configure(function (/* ctx */) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli/boot-files
-    boot: ["i18n", "axios", "vuefire",'db',],
+    boot: ["i18n", "axios",],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
     css: ["app.scss"],
@@ -47,11 +47,15 @@ module.exports = configure(function (/* ctx */) {
 
       "roboto-font", // optional, you are not bound to it
       "material-icons",
-      "material-icons-outlined", // optional, you are not bound to it
+      "material-icons-outlined",
+      "material-symbols-outlined" // optional, you are not bound to it
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
     build: {
+      env: {
+        BASE_URL: process.env.BASE_URL
+      },
       target: {
         browser: ["es2021", "edge88", "firefox78", "chrome87", "safari14"],
         node: "node16",

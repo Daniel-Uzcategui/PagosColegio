@@ -6,9 +6,9 @@
         </q-tr>
 </template>
 <script setup>
-import { useDocument } from 'vuefire';
-import { collection, doc } from 'firebase/firestore';
-import { db } from 'src/boot/vuefire';
-  const totalOwed = useDocument(doc(collection(db,'school'), 'accounting'))
+// import { useDocument } from 'vuefire';
+// import { collection, doc } from 'firebase/firestore';
+// import { db } from 'src/boot/vuefire';
+  // const totalOwed = useDocument(doc(collection(db,'school'), 'accounting'))
 
 </script>

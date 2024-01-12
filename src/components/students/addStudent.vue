@@ -35,8 +35,8 @@
               ]"
             />
             <q-input
-              v-model="Sección"
-              label="Sección"
+              v-model="Seccion"
+              label="Seccion"
               filled
               :rules="[
                 val => (val && val.length > 0) || 'Este campo es obligatorio',
@@ -51,19 +51,6 @@
               label="Grado"
               filled
               :rules="[val => (Number.isSafeInteger(val)) || 'Debe seleccionar un grado']"
-            />
-            <q-select
-              v-model="houseHold"
-              :options="houseHoldOptions"
-              use-input
-              label="Familia"
-              filled
-              :rules="[(value) => value?.length || 'Debe Seleccionar una Familia']"
-              :option-label="(parent) => parent.Apellido"
-              :option-value="(value) => value.id"
-              emit-value
-              map-options
-              @filter="filterFn"
             />
             <p>Porcentaje del monto a pagar: {{ DiscountComputed }} %</p>
             <q-slider
@@ -107,103 +94,82 @@
     </q-dialog>
   </template>
   
-<script setup>
+  <script setup>
   import { ref, computed } from 'vue';
-  import { collection, addDoc, updateDoc,doc, Timestamp } from 'firebase/firestore';
-  import { db } from 'src/boot/vuefire';
   import { Notify } from 'quasar';
-  import { useCollection } from 'vuefire';
-  import { yearLabelValue } from 'src/utils/schoolYear';
-  const houseHolds = useCollection(collection(db, 'houseHolds'));
+  import { yearLabelValue } from 'src/utils/schoolYear.js';
+  import { useStudentStore } from 'src/stores/Students.js'; // import your store
+
+  const studentStore = useStudentStore(); // use your store
+
   const props = defineProps({
-  showDialog: {
-    type: Boolean,
-    required: true,
-  },
-  student: {
-    type: Object,
-    default: () => ({}),
-  },
+    showDialog: {
+      type: Boolean,
+      required: true,
+    },
+    student: {
+      type: Object,
+      default: () => ({}),
+    },
   });
+
   const emits = defineEmits(['update:showDialog', 'submitted'])
+
   const FechaInicioCuota = ref(props.student.FechaInicioCuota)
-  const inicioCuotaHandle = computed({ get:() => FechaInicioCuota.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
-    FechaInicioCuota.value = Timestamp.fromDate(new Date(e))}})
-  const ID = ref(props.student.id)
+  const inicioCuotaHandle = computed({ get:() => FechaInicioCuota.value?.toLocaleDateString?.('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
+    FechaInicioCuota.value = new Date(e)}})
+  const ID = ref(props.student._id)
   const Nombre = ref(props.student.Nombre);
   const Apellido = ref(props.student.Apellido);
   const ced = ref(props.student.ced);
-  const Sección = ref(props.student.Sección);
+  const Seccion = ref(props.student.Seccion);
   const Grado = ref(props.student.Grado);
   const Discount = ref(props.student.Discount);
   const oldDiscount = ref(props.student.Discount)
   const newAmountStartDate = ref()
-  const computedStartDate = computed({ get:() => newAmountStartDate.value?.toDate?.().toLocaleDateString('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
-  newAmountStartDate.value = Timestamp.fromDate(new Date(e))}})
+  const computedStartDate = computed({ get:() => newAmountStartDate.value?.toLocaleDateString?.('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
+  newAmountStartDate.value = new Date(e)}})
   const DiscountComputed = computed({
     get: () => parseFloat(((Discount.value || 1) * 100).toFixed(2)), set: (e) => {
       Discount.value = Math.round(e) * 0.01
     }
   })
-  const houseHold = ref(props.student.houseHold);
-  const houseHoldOptions = ref(houseHolds.value)
-function filterFn (val, update) {
-        if (val === '') {
-          update(() => {
-            houseHoldOptions.value = houseHolds.value
 
-            // here you have access to "ref" which
-            // is the Vue reference of the QSelect
-          })
-          return
-        }
-
-        update(() => {
-          const needle = val.toLowerCase()
-          houseHoldOptions.value = houseHolds.value.filter(option =>
-            option.Apellido.toLowerCase().includes(needle)
-          )
-        })
+  async function onSubmit() {
+    try {
+      if (ID.value) {
+        // Update existing student
+        await studentStore.set({
+          _id: ID.value,
+          Nombre: Nombre.value,
+          Apellido: Apellido.value,
+          'ced': ced.value,
+          Seccion: Seccion.value,
+          Grado: Grado.value,
+          Discount: Discount.value,
+          FechaInicioCuota: FechaInicioCuota.value,
+          newAmountStartDate: newAmountStartDate.value
+        });
+        Notify.create({ message: 'Student updated', color: 'green' });
+      } else {
+        // Add new student
+        await studentStore.add({
+          Nombre: Nombre.value,
+          Apellido: Apellido.value,
+          'ced': ced.value,
+          Seccion: Seccion.value,
+          Grado: Grado.value,
+          Discount: Discount.value,
+          FechaInicioCuota: inicioCuotaHandle.value
+        });
+        Notify.create({ message: 'Student added', color: 'green' });
       }
-  
-async function onSubmit() {
-  try {
-    if (ID.value) {
-      // Update existing student
-      await updateDoc(doc(db, 'students', ID.value), {
-        Nombre: Nombre.value,
-        Apellido: Apellido.value,
-        'ced': ced.value,
-        Sección: Sección.value,
-        Grado: Grado.value,
-        houseHold: houseHold.value,
-        Discount: Discount.value,
-        FechaInicioCuota: FechaInicioCuota.value,
-        newAmountStartDate: newAmountStartDate.value
-      });
-      Notify.create({ message: 'Student updated', color: 'green' });
-    } else {
-      // Add new student
-      await addDoc(collection(db, 'students'), {
-        Nombre: Nombre.value,
-        Apellido: Apellido.value,
-        'ced': ced.value,
-        Sección: Sección.value,
-        Grado: Grado.value,
-        houseHold: houseHold.value,
-        Discount: Discount.value,
-        FechaInicioCuota: inicioCuotaHandle.value
-      });
-      Notify.create({ message: 'Student added', color: 'green' });
+      emits('update:showDialog', false);
+    } catch (error) {
+      console.error(error);
+      Notify.create({ message: 'Error saving student', color: 'red' });
+    } finally {
+      emits('submitted');
     }
-    emits('update:showDialog', false);
-  } catch (error) {
-    console.error(error);
-    Notify.create({ message: 'Error saving student', color: 'red' });
-  } finally {
-    emits('submitted');
   }
-}
-
 </script>
-  

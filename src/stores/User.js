@@ -1,158 +1,133 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
-import { collection, doc, setDoc } from "firebase/firestore";
-import { db } from "src/boot/vuefire";
-import {
-  getAuth,
-  sendSignInLinkToEmail,
-  linkWithCredential,
-  EmailAuthProvider,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
-} from "firebase/auth";
+import axios from "axios";
 import { useRouter } from "vue-router";
-import { useDocument } from "vuefire";
-
-export const useUsersStore = defineStore(
-  "User",
-  () => {
+import { ref }  from "vue"
+import { api } from "src/boot/axios";
+import {jwtDecode} from 'jwt-decode';
+import { Notify } from "quasar";
+export const useUsersStore = defineStore("User", () => {
+  const device = ref({ l: "gg" });
+  const selectedUser = ref({ uid: "nadie" });
+  const currentUser = ref({ _id: null });
+  const token = ref(null)
+  const user = ref(null)
+  const list = ref([]);
+  const lastUser = ref(null);
+  async function queryUsers() {
     try {
-      const device = ref({l:'gg'})
-      const rolesPermissions = {
-        Admin: ["del", "add", "set", "manageRoles"],
-        Collaborator: ["del", "add", "set"],
-        Viewer: [],
-      };
-      const selectedUser = ref({ uid: "nadie" });
-      const currentUser = ref({ uid: "nadie" });
-      const currentUserRef = computed(() =>
-        doc(collection(db, "users"), currentUser.value?.uid || "nadie")
-      );
-      const currentUserDoc  = useDocument(currentUserRef);
-      async function registerUser(form) {
-        let Doc = {
-          id: currentUser.value.uid,
-          email: currentUser.value.email,
-        };
-        if (form.value?.name) {
-          Doc.name = form.value.name;
-        }
-        await setDoc(currentUserRef.value, Doc);
-      }
-      const auth = getAuth();
-      const actionCodeSettings = {
-        // URL you want to redirect back to. The domain (www.example.com) for this
-        // URL must be in the authorized domains list in the Firebase Console.
-        url: "https://ecr7xo3y.web.app/login",
-        // This must be true.
-        handleCodeInApp: true,
-      };
-      async function LoginWithEmail() {
-        if (isSignInWithEmailLink(auth, window.location.href)) {
-          // Additional state parameters can also be passed via URL.
-          // This can be used to continue the user's intended action before triggering
-          // the sign-in operation.
-          // Get the email if available. This should be available if the user completes
-          // the flow on the same device where they started it.
-          let email = window.localStorage.getItem("emailForSignIn");
-          if (!email) {
-            // User opened the link on a different device. To prevent session fixation
-            // attacks, ask the user to provide the associated email again. For example:
-            email = window.prompt("Please provide your email for confirmation");
-          }
-          // The client SDK will parse the code from the link for you.
-          signInWithEmailLink(auth, email, window.location.href)
-            .then(async (result) => {
-              // Clear email from storage.
-              window.localStorage.removeItem("emailForSignIn");
-              // You can access the new user via result.user
-              // Additional user info profile not available via:
-              // result.additionalUserInfo.profile == null
-              await registerUser();
-              useRouter().push({ path: "" });
-              // You can check if the user is new or existing:
-              // result.additionalUserInfo.isNewUser
-            })
-            .catch((error) => {
-              // Some error occurred, you can inspect the code: error.code
-              // Common errors could be invalid email and invalid or expired OTPs.
-              console.error(error);
-            });
-        }
-      }
-      async function loginWithCredential() {
-        const credential = EmailAuthProvider.credentialWithLink(
-          email,
-          window.location.href
-        );
-
-        // Link the credential to the current user.
-        const auth = getAuth();
-        linkWithCredential(auth.currentUser, credential)
-          .then((usercred) => {
-            // The provider is now successfully linked.
-            // The phone user can now sign in with their phone number or email.
-          })
-          .catch((error) => {
-            // Some error occurred.
-          });
-      }
-      async function sendSingInLink(email) {
-        return sendSignInLinkToEmail(auth, email, actionCodeSettings)
-          .then(() => {
-            // The link was successfully sent. Inform the user.
-            // Save the email locally so you don't need to ask the user for it again
-            // if they open the link on the same device.
-            console.log("Succesfull");
-
-            window.localStorage.setItem("emailForSignIn", email);
-            // ...
-          })
-          .catch((error) => {
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            console.error(error);
-          });
-      }
-      async function set(payload) {
-        try {
-          const docRef = doc(db, "users/", currentUser.value.uid);
-          await setDoc(
-            docRef,
-            {
-              ...payload,
-              lastModified: new Date(),
-            },
-            { merge: true }
-          );
-        } catch (error) {
-          console.error(error);
-        }
-      }
-      return {
-        currentUser,
-        selectedUser,
-        currentUserRef,
-        currentUserDoc,
-        device,
-        set,
-        registerUser,
-        sendSingInLink,
-        LoginWithEmail,
-      };
+      const response = await api.get("/users");
+      list.value = response.data;
+      lastUser.value = response.data[0];
     } catch (error) {
       console.error(error);
     }
-  },
-  {
-    persist: {
-      paths: [
-        "currentUser",
-        "device",
-        "selectedUser",
-        "currentUserRef",
-        "currentUserDoc",
-      ],
-    },
   }
-);
+  async function registerUser(form) {
+    try {
+      let date = new Date();
+      const response = await api.post(`/users`, {
+        ...form.value,
+        dateIn: date,
+        lastModified: date,
+      });
+      list.value.push(response.data);
+      return response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async function register(email, password) {
+    try {
+      const response = await api.post('/users', { email, password });
+      token.value = response.data.token;
+      user.value = jwtDecode(token.value);
+      currentUser.value = response.data.user._id
+      api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async function login (email, password) {
+    try {
+      const response = await api.post('/users/login', { email, password });
+      token.value = response.data.token;
+      user.value = jwtDecode(token.value);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
+      return response.data
+    } catch (error) {
+      console.error(error);
+      if (error.response?.data?.error) {
+        Notify.create({message: error.response.data.error, color: 'red'})
+      }
+      console.log({error})
+    }
+  }
+  function logout () {
+    token.value = null;
+    user.value = null;
+    delete api.defaults.headers.common['Authorization'];
+  }
+  async function sendSingInLink(email) {
+    try {
+      const response = await axios.post("http://localhost:3000/sendSignInLink", { email });
+      console.log("Successful");
+      return response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function LoginWithEmail(email, href) {
+    try {
+      const response = await axios.post("http://localhost:3000/loginWithEmail", { email, href });
+      await registerUser();
+      useRouter().push({ path: "" });
+      return response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function set(payload) {
+    try {
+      const response = await api.patch(`/users/${currentUser.value._id}`, {
+        ...payload,
+        lastModified: new Date(),
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async function setOther(payload) {
+    try {
+      const response = await api.patch(`/users/${payload._id}`, {
+        ...payload,
+        lastModified: new Date(),
+      });
+      const index = list.value.findIndex((user) => user._id === payload._id);
+      if (index !== -1) {
+        list.value[index] = response.data;
+      }
+      return response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  return {
+    register,
+    login,
+    logout,
+    queryUsers,
+    list,
+    device,
+    selectedUser,
+    currentUser,
+    setOther,
+    registerUser,
+    sendSingInLink,
+    LoginWithEmail,
+    set,
+  };
+});

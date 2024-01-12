@@ -15,7 +15,7 @@
       class="row q-pr-md q-pl-md text-accent"
     >
       <q-btn icon="person" round flat>
-        <AuthAccountMenu />
+        <!-- <AuthAccountMenu /> -->
       </q-btn>
 
       <!-- <q-btn flat round dense icon="more_vert" /> -->
@@ -23,6 +23,6 @@
   </q-toolbar>
 </template>
 <script setup>
-import AuthAccountMenu from "src/auth/components/AccountMenu/AccountMenu.vue";
+// import AuthAccountMenu from "src/auth/components/AccountMenu/AccountMenu.vue";
 ;
 </script>

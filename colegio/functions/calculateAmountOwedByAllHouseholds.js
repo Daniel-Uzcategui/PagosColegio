@@ -14,12 +14,12 @@ import cheerio from "cheerio";
 //   // Query the cuotas with a Periodo.from date greater than or equal to the start date
 //   // and order the results by the Periodo.from field
 //   const cuotasSnap = await cuotasRef.where("Periodo.from", ">=", startDate).orderBy("Periodo.from").get();
-//   const cuotasData = cuotasSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+//   const cuotasData = cuotasSnap.docs.map((doc) => ({id: doc._id, ...doc.data()}));
 
 //   // Update the cuota amount and recalculate the remaining amount due for each cuota
 //   for (let i = 0; i < cuotasData.length; i++) {
 //     const cuotaData = cuotasData[i];
-//     const cuotaRef = cuotasRef.doc(cuotaData.id);
+//     const cuotaRef = cuotasRef.doc(cuotaData._id);
 //     const cuotaWithDiscount = Discount * cuotaData.cuotaDefault.Monto;
 //     await cuotaRef.update({Monto: cuotaWithDiscount});
 //     const totalPaid = cuotaData.TotalPaid || 0;
@@ -30,7 +30,7 @@ import cheerio from "cheerio";
 //     // Apply the excess payment to the next cuota
 //       if (i < cuotasData.length - 1) {
 //         const nextCuotaData = cuotasData[i + 1];
-//         const nextCuotaRef = db.collection(`students/${studentId}/cuota_payments`).doc(nextCuotaData.id);
+//         const nextCuotaRef = db.collection(`students/${studentId}/cuota_payments`).doc(nextCuotaData._id);
 //         const nextTotalPaid = nextCuotaData.TotalPaid || 0;
 //         const nextRemainingAmountDue = nextCuotaData.Monto - (nextTotalPaid + Math.abs(remainingAmountDue));
 //         await nextCuotaRef.update({TotalPaid: nextTotalPaid + Math.abs(remainingAmountDue), RemainingAmountDue: nextRemainingAmountDue});

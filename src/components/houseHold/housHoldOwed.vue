@@ -62,9 +62,9 @@ import { ref, onMounted } from 'vue';
 import houseHoldPayments from './houseHoldPayments.vue';
 import { onRequest } from 'src/utils/onRequest.js';
 import calculateOwed from '../accountig/calculateOwed.vue'
-import { useDocument } from 'vuefire';
-import { collection, doc } from 'firebase/firestore';
-import { db } from 'src/boot/vuefire';
+// import { useDocument } from 'vuefire';
+// import { collection, doc } from 'firebase/firestore';
+// import { db } from 'src/boot/vuefire';
 const houseHoldHistoryOpen = ref(false)
   const houseHoldOpen = ref(false)
   const houseHoldRef = ref()

@@ -1,24 +1,42 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
+import { Notify } from 'quasar'
+const baseURL = window?.baseUrl || process.env.BASE_URL.toString()
+const api = axios.create({ baseURL})
+console.log('process.env.BASE_URL', baseURL)
+export default boot(({ app, router }) => {
+  api.interceptors.request.use(function (config) {
+    if (!config.headers.common.Authorization) {
+      router.push('/login')
+    }
+    return config
+  }, function (error) {
+    return Promise.reject(error)
+  })
 
-// Be careful when using SSR for cross-request state pollution
-// due to creating a Singleton instance here;
-// If any client changes this (global) instance, it might be a
-// good idea to move this instance creation inside of the
-// "export default () => {}" function below (which runs individually
-// for each client)
-const api = axios.create({ baseURL: 'https://api.example.com' })
+  api.interceptors.response.use(undefined, function (error) {
 
-export default boot(({ app }) => {
-  // for use inside Vue files (Options API) through this.$axios and this.$api
+    if (error.response?.status === 401) {
+      Notify.create({
+        message: 'Unauthorized: Please check your credentials',
+        color: 'negative'
+      })
+    }
+    if (typeof error.response?.data   === 'string') {
+      Notify.create({
+        message: error.response.data,
+        color: 'negative'
+      })
+    }
+    if (error.response?.status === 420) {
+        // this error means the license is invalid so please redirect to the license page
+        router.push('/license')
+    }
+    return Promise.reject(error)
+  })
 
   app.config.globalProperties.$axios = axios
-  // ^ ^ ^ this will allow you to use this.$axios (for Vue Options API form)
-  //       so you won't necessarily have to import axios in each vue file
-
   app.config.globalProperties.$api = api
-  // ^ ^ ^ this will allow you to use this.$api (for Vue Options API form)
-  //       so you can easily perform requests against your app's API
 })
 
 export { api }

@@ -26,16 +26,16 @@
 
 </template>
 <script setup>
-import { collection, doc, query, where } from 'firebase/firestore';
-import { db } from 'src/boot/vuefire';
+// import { collection, doc, query, where } from 'firebase/firestore';
+// import { db } from 'src/boot/vuefire';
 import { toRef, watchEffect } from 'vue'
-import { useCollection, useDocument } from 'vuefire';
+// import { useCollection, useDocument } from 'vuefire';
 import { ref } from 'vue';
 import AddParent from '../parents/addParent.vue';
 const props = defineProps(['houseHold', 'openDiag'])
 const houseHoldRef = toRef(props, 'houseHold')
 const parentRef = ref()
-const Parents = useCollection(query(collection(db, 'parents'), where('houseHold', '==', houseHoldRef.value.id)))
+const Parents = useCollection(query(collection(db, 'parents'), where('houseHold', '==', houseHoldRef.value._id)))
 const addParentDialog = ref(false)
 function editParent (parent) {
     parentRef.value = parent

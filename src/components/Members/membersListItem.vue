@@ -15,7 +15,7 @@
   </q-item>
 </template>
 <script setup>
-import { deleteField } from "@firebase/firestore";
+// import { deleteField } from "@firebase/firestore";
 import { useListsStore } from "src/stores/lists";
 import { useFilterStore } from "src/stores/filter";
 import { computed } from "vue";
@@ -26,10 +26,10 @@ function updateData() {
   if (prop.updateCard) {
     return isUserInCard.value === "check" ? DeleteValues() : updateValues();
   }
-  if (members.value[prop.user.id]) {
-    return delete filterStore.filter.members[prop.user.id];
+  if (members.value[prop.user._id]) {
+    return delete filterStore.filter.members[prop.user._id];
   }
-  filterStore.filter.members[prop.user.id] = true;
+  filterStore.filter.members[prop.user._id] = true;
 }
 const prop = defineProps({
   user: Object,
@@ -43,8 +43,8 @@ const userProp = computed(() => prop.user);
 const card = computed(() => useListsStore().selectedCard);
 const isUserInCard = computed(() => {
   if (
-    card.value.members?.[userProp.value.id] ||
-    (!prop.updateCard && members.value[prop.user.id])
+    card.value.members?.[userProp.value._id] ||
+    (!prop.updateCard && members.value[prop.user._id])
   ) {
     return "check";
   }
@@ -55,13 +55,13 @@ const update = listStore.update;
 const updateValues = async () =>
   update({
     id: card.value.listId,
-    ["cards." + card.value.id + "." + "members." + userProp.value.id]:
+    ["cards." + card.value._id + "." + "members." + userProp.value._id]:
       userProp.value,
   });
 const DeleteValues = async () =>
   update({
     id: card.value.listId,
-    ["cards." + card.value.id + "." + "members." + userProp.value.id]:
+    ["cards." + card.value._id + "." + "members." + userProp.value._id]:
       deleteField(),
   });
 </script>

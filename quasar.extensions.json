@@ -1,8 +1,0 @@
-{
-  "@vueauth/auth": {
-    "authProvider": {
-      "identifier": "firebase",
-      "packageName": "@vueauth/firebase"
-    }
-  }
-}

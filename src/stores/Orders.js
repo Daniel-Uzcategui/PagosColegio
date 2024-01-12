@@ -21,7 +21,7 @@ export const useOrderStore = defineStore(
       const list = useCollection(orderSource)
       async function set(payload) {
         try {
-          const docRef = doc(db, '/ambiente/ruedalo/orders', payload.id);
+          const docRef = doc(db, '/ambiente/ruedalo/orders', payload._id);
           await setDoc(
             docRef,
             {

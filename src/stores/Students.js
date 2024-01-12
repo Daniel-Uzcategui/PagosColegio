@@ -1,74 +1,82 @@
 import { defineStore } from "pinia";
-import { computed } from "vue";
-import { collection, doc, setDoc, query, orderBy, limit } from "firebase/firestore";
-import { db } from "src/boot/vuefire";
-import { useCollection } from "vuefire";
+import axios from 'axios';
+import {ref}  from "vue"
+import { api } from "src/boot/axios";
+export const useStudentStore = defineStore("Students", () => {
+  try {
+  const list = ref([]);
+  const lastStudent = ref(null);
 
-export const useStudentStore = defineStore(
-  "Students",
-  () => {
+  async function queryStudents() {
     try {
-      const studentSource = computed(
-        () => collection(db,'/students')
-      )
-      const studentLastSource = computed(() => query(
-        collection(db,'/students'),
-        orderBy("dateIn", 'desc'),
-        limit(1)
-      ))
-      const queryStudents = query(
-        collection(db,'/students'),
-        orderBy("dateIn", 'desc'),
-        limit(10)
-      )
-      const lastStudent = useCollection(studentLastSource)
-      // contact will always be in sync with the data source
-      const list = useCollection(studentSource)
-      async function add(payload) {
-        try {
-          let date = new Date()
-          const docRef = doc(collection(db, '/students/'));
-          await setDoc(
-            docRef,
-            {
-              ...payload,
-              id: docRef.id,
-              dateIn: date,
-              lastModified: date,
-            },
-            { merge: true }
-          );
-        } catch (error) {
-          console.error(error);
-        }
-      }
-      async function set(payload) {
-        try {
-          const docRef = doc(db, '/students', payload.id);
-          await setDoc(
-            docRef,
-            {
-              ...payload,
-              lastModified: new Date(),
-            },
-            { merge: true }
-          );
-        } catch (error) {
-          console.error(error);
-        }
-      }
-      return {
-        queryStudents,
-        add,
-        set,
-        lastStudent,
-        list
-      };
+      const response = await api.get("/students");
+      list.value = response.data;
+      lastStudent.value = response.data[0];
     } catch (error) {
       console.error(error);
     }
-  },
-  {
-    persist: true
   }
-);
+
+  async function add(payload) {
+    try {
+      let date = new Date();
+      const response = await api.post("/students", {
+        ...payload,
+        dateIn: date,
+        lastModified: date,
+      });
+      list.value.push(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function set(payload) {
+    try {
+      const response = await api.patch(`/students/${payload._id}`, {
+        ...payload,
+        lastModified: new Date(),
+      });
+      const index = list.value.findIndex((student) => student._id === payload._id);
+      if (index !== -1) {
+        list.value[index] = response.data;
+      }
+    } catch (error) {
+      console.log({error})
+
+      console.error(error);
+    }
+  }
+  async function remove(id) {
+    try {
+      const response = await api.delete(`/students/${id}`);
+      const index = list.value.findIndex((student) => student._id === id);
+      if (index !== -1) {
+        list.value.splice(index, 1);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  // upload students
+  async function uploadStudents(payload) {
+    try {
+      const response = await api.post(`/students/upload`, payload);
+      list.value = response.data;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  return {
+    queryStudents,
+    uploadStudents,
+    add,
+    set,
+    list,
+    lastStudent,
+    remove,
+  };
+} catch  (e) {
+  console.error(e)
+}
+});

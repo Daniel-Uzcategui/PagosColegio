@@ -32,7 +32,7 @@ export const handleNewDiscount = onDocumentUpdated(
       if (cuotasSnap.empty) {
         return;
       }
-      const cuotasData = cuotasSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+      const cuotasData = cuotasSnap.docs.map((doc) => ({id: doc._id, ...doc.data()}));
       // Calculate the total amount paid across all cuotas
       let totalPaid = 0;
       for (const cuotaData of cuotasData) {
@@ -42,7 +42,7 @@ export const handleNewDiscount = onDocumentUpdated(
       // Redistribute the total amount paid across all cuotas
       for (let i = 0; i < cuotasData.length; i++) {
         const cuotaData = cuotasData[i];
-        const cuotaRef = cuotasRef.doc(cuotaData.id);
+        const cuotaRef = cuotasRef.doc(cuotaData._id);
         const cuotaWithDiscount = Discount * cuotaData.cuotaDefault.Monto;
         await cuotaRef.update({Monto: cuotaWithDiscount});
         let remainingAmountDue = cuotaWithDiscount - totalPaid;
@@ -87,7 +87,7 @@ export const handleStudent = onDocumentCreated(
         const cuotaDocData = cuotaDoc.data();
         const newAmount = cuotaDiscount * cuotaDocData.Monto;
         const cuotaRef = admin.firestore().collection(`students/${event.params.studentId}/cuota_payments`).doc();
-        batch.set(cuotaRef, {...cuotaDocData, cuotaDefault: cuotaDocData, Monto: newAmount, Discount: cuotaDiscount, RemainingAmountDue: newAmount, cuotaId: cuotaDoc.id, houseHold: studentData.houseHold, studentId: event.params.studentId}, {merge: true});
+        batch.set(cuotaRef, {...cuotaDocData, cuotaDefault: cuotaDocData, Monto: newAmount, Discount: cuotaDiscount, RemainingAmountDue: newAmount, cuotaId: cuotaDoc._id, houseHold: studentData.houseHold, studentId: event.params.studentId}, {merge: true});
         count++;
         if (count === 500) {
           await batch.commit();

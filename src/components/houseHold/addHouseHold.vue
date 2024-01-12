@@ -9,7 +9,7 @@
             <q-input v-model="Apellido" label="Apellido" filled />
             <q-select v-model="Padres" :options="parents" label="Padres" filled multiple
             :option-label="labelParent"
-            :option-value="(value) => value.id"
+            :option-value="(value) => value._id"
             emit-value
             map-options
             :filter="(options, filter) => options.filter(option => option.Apellido.toLowerCase().includes(filter.toLowerCase()))" />
@@ -25,11 +25,11 @@
   
   <script setup>
   import { toRef } from 'vue';
-  import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
-  import { db } from 'src/boot/vuefire';
+  // import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+  // import { db } from 'src/boot/vuefire';
   import { Notify } from 'quasar';
-  import {useCollection} from 'vuefire'
-  const parents = useCollection(collection(db, 'parents'));
+  // import {useCollection} from 'vuefire'
+  // const parents = useCollection(collection(db, 'parents'));
   const props = defineProps({
     showDialog: {
       type: Boolean,
@@ -51,9 +51,9 @@ const Apellido = toRef(props.houseHold, 'Apellido');
 const Padres = toRef(props.houseHold, 'Padres');
   async function onSubmit() {
   try {
-    if (props.houseHold.id) {
+    if (props.houseHold._id) {
       // Update existing houseHold
-      await updateDoc(doc(db, 'houseHolds', props.houseHold.id), {
+      await updateDoc(doc(db, 'houseHolds', props.houseHold._id), {
         Apellido: Apellido.value.toUpperCase(),
         Padres: Padres.value,
         PadresRef: Padres.value.map(x => doc(db, 'parents', x))
