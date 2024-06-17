@@ -34,7 +34,7 @@ binary-state-sort
                             Subir de grado a estudiantes
                         </q-item-section>
                     </q-item>
-                    <q-item clickable>
+                    <!-- <q-item clickable>
                         <UploadStudentCsv />
                     </q-item>
                     <q-item clickable>
@@ -42,7 +42,7 @@ binary-state-sort
                     </q-item>
                     <q-item clickable>
                         <DownloadGradeYears />
-                    </q-item>
+                    </q-item> -->
                 </q-list>
             </q-menu>
         </q-btn>
@@ -89,7 +89,7 @@ binary-state-sort
 </div>
 </template>
 <script setup>
-import { ref, onMounted, toRef } from 'vue';
+import { ref, onMounted, toRef, onUpdated } from 'vue';
 import { onRequest } from 'src/utils/onRequest.js';
 import AddStudent from './addStudent.vue';
 import { yearsByNumber } from 'src/utils/schoolYear.js';
@@ -98,9 +98,6 @@ const listStore = useStudentStore();
 import HouseHoldPayments from '../houseHold/houseHoldPayments.vue';
 import { api } from 'src/boot/axios';
 import { Loading, Notify } from 'quasar';
-import UploadStudentCsv from './uploadStudentCsv.vue';
-import DownloadTemplateCsv from './downloadTemplateCsv.vue';
-import DownloadGradeYears from './downloadGradeYears.vue';
 const studentOpen = ref(false)
 const addStudentDialog = ref(false)
 const studentRef = ref()
@@ -112,7 +109,6 @@ Apellido: '',
 Seccion: '',
 Grado: 1,
 houseHold: '',
-Discount: 1
 }
 const studentRefEdit = ref(studentDefault)
 //define updateAmountOwed
@@ -122,6 +118,7 @@ try {
 
 const response = await api.patch('/students/updateAmountOwed')
 Notify.create({message: response.data, color: 'green'})
+return tableRef.value.requestServerInteraction()
 } catch (error) {
 Notify.create({message: error.message, color:'red'})
 console.log({error})
@@ -174,6 +171,7 @@ const columns = [
 { "name": "Apellido", "label": "APELLIDO", "field": "Apellido", "align": "left", "sortable": true },
 { "name": "ced", "label": "CÉDULA DE IDENTIDAD", "field": "ced", "align": "left", "sortable": true },
 { "name": "Seccion", "label": "Seccion", "field": "Seccion", "align": "left", "sortable": true },
+{ "name": "help", "label": "Tipo", "field": row => row.help ? 'Ayuda' : 'Regular', "align": "left", "sortable": true },
 { "name": "Grado", "label": "GRADO", "field": (row) => yearsByNumber.get(row.Grado), "align": "left", "sortable": true },
 { "name": "amountOwed", "label": "DEUDA", "field": "amountOwed", "align": "left", "sortable": true },
 { name: 'edit', label: 'Edit', align: 'center', sortable: false },
@@ -201,4 +199,5 @@ onMounted(() => {
 // get initial data from server (1st page)
 tableRef.value.requestServerInteraction()
 })
+
 </script>

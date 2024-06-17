@@ -52,15 +52,7 @@
               filled
               :rules="[val => (Number.isSafeInteger(val)) || 'Debe seleccionar un grado']"
             />
-            <p>Porcentaje del monto a pagar: {{ DiscountComputed }} %</p>
-            <q-slider
-              v-model="DiscountComputed"
-              :min="1"
-              :max="100"
-              :step="1"
-              label
-              color="green"
-            />
+            <q-toggle label="Estudiante Ayuda" v-model="help" color="green" />
             <q-input
               v-if="ID"
               v-model="inicioCuotaHandle"
@@ -75,15 +67,6 @@
                 v-model="inicioCuotaHandle"
                 landscape
             />
-            <div class="q-mt-xl q-ma-sm text-bold" v-if="ID && oldDiscount !== Discount">
-              <p>A partir de que Fecha se calcula el nuevo monto?</p>
-              <q-date
-              title="Fecha para calculo monto nuevo"
-                mask="M/D/YYYY"
-                  v-model="computedStartDate"
-                  landscape
-              />
-            </div>
             <div>
               <q-btn label="Submit" type="submit" color="primary" />
               <!-- <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" /> -->
@@ -99,6 +82,7 @@
   import { Notify } from 'quasar';
   import { yearLabelValue } from 'src/utils/schoolYear.js';
   import { useStudentStore } from 'src/stores/Students.js'; // import your store
+import { api } from 'src/boot/axios';
 
   const studentStore = useStudentStore(); // use your store
 
@@ -118,56 +102,59 @@
   const FechaInicioCuota = ref(props.student.FechaInicioCuota)
   const inicioCuotaHandle = computed({ get:() => FechaInicioCuota.value?.toLocaleDateString?.('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
     FechaInicioCuota.value = new Date(e)}})
+  const help = ref(props.student.help || false)
   const ID = ref(props.student._id)
   const Nombre = ref(props.student.Nombre);
   const Apellido = ref(props.student.Apellido);
   const ced = ref(props.student.ced);
   const Seccion = ref(props.student.Seccion);
   const Grado = ref(props.student.Grado);
-  const Discount = ref(props.student.Discount);
-  const oldDiscount = ref(props.student.Discount)
   const newAmountStartDate = ref()
-  const computedStartDate = computed({ get:() => newAmountStartDate.value?.toLocaleDateString?.('en-US') || new Date().toLocaleDateString('en-US'), set: (e) => {
-  newAmountStartDate.value = new Date(e)}})
-  const DiscountComputed = computed({
-    get: () => parseFloat(((Discount.value || 1) * 100).toFixed(2)), set: (e) => {
-      Discount.value = Math.round(e) * 0.01
-    }
-  })
-
   async function onSubmit() {
     try {
+      const response = await api.get(`/check-ced/${ced.value}`);
+      if (response.data.isUsed && response.data.id !== ID.value) {
+        // If the ced is already used and the id is not the same, show an error
+        return Notify.create({ message: 'Cédula ya está en uso', color: 'red' });
+      }
       if (ID.value) {
         // Update existing student
-        await studentStore.set({
+        const response = await studentStore.set({
           _id: ID.value,
           Nombre: Nombre.value,
           Apellido: Apellido.value,
           'ced': ced.value,
           Seccion: Seccion.value,
           Grado: Grado.value,
-          Discount: Discount.value,
+          help: help.value,
           FechaInicioCuota: FechaInicioCuota.value,
           newAmountStartDate: newAmountStartDate.value
         });
-        Notify.create({ message: 'Student updated', color: 'green' });
+        if (response) {
+          Notify.create({ message: 'Student updated', color: 'green' });
+        }
       } else {
         // Add new student
-        await studentStore.add({
+        const response = await studentStore.add({
           Nombre: Nombre.value,
           Apellido: Apellido.value,
           'ced': ced.value,
+          help: help.value,
           Seccion: Seccion.value,
           Grado: Grado.value,
-          Discount: Discount.value,
           FechaInicioCuota: inicioCuotaHandle.value
         });
-        Notify.create({ message: 'Student added', color: 'green' });
+        if (response) { 
+          Notify.create({ message: 'Student added', color: 'green' });
+        }
       }
       emits('update:showDialog', false);
     } catch (error) {
       console.error(error);
-      Notify.create({ message: 'Error saving student', color: 'red' });
+      if (error.response?.data?.code === 11000 && error.response.data?.keyValue?.ced) {
+        Notify.create({ message: 'Cédula Repetida: ' + error.response.data.keyValue.ced , color: 'red' });
+      }
+      Notify.create({ message: 'Error guardando estudiante', color: 'red' });
     } finally {
       emits('submitted');
     }

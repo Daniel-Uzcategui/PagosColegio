@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import axios from 'axios';
 import {ref}  from "vue"
 import { api } from "src/boot/axios";
+import { Dialog } from "quasar";
 export const useStudentStore = defineStore("Students", () => {
   try {
   const list = ref([]);
@@ -26,8 +27,10 @@ export const useStudentStore = defineStore("Students", () => {
         lastModified: date,
       });
       list.value.push(response.data);
+      return response
     } catch (error) {
       console.error(error);
+      throw error
     }
   }
 
@@ -41,9 +44,18 @@ export const useStudentStore = defineStore("Students", () => {
       if (index !== -1) {
         list.value[index] = response.data;
       }
+      return response
     } catch (error) {
-      console.log({error})
-
+      console.error(error);
+      throw error
+    }
+  }
+  async function getStudent(id) {
+    try {
+      console.log({id})
+      const response = await api.get(`/students/${id}`);
+      return response
+    } catch (error) {
       console.error(error);
     }
   }
@@ -61,8 +73,12 @@ export const useStudentStore = defineStore("Students", () => {
   // upload students
   async function uploadStudents(payload) {
     try {
-      const response = await api.post(`/students/upload`, payload);
-      list.value = response.data;
+      const response = await api.post(`/students/upload`, {students: payload});
+      console.log({response})
+      list.value = response.data.allStudents;
+      if (response.data.skipped.length) {
+        Dialog.create({message: "Los siguientes estudiantes no pudieron ser agregados por problemas de formato: " +  JSON.stringify(response.data.skipped.map(student => student.cedula))})
+      }
     } catch (error) {
       console.error(error);
     }
@@ -72,6 +88,7 @@ export const useStudentStore = defineStore("Students", () => {
     uploadStudents,
     add,
     set,
+    getStudent,
     list,
     lastStudent,
     remove,

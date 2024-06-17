@@ -8,6 +8,7 @@ import { useStudentStore } from "./Students";
 
 export const usePaymentStore = defineStore("Payments", () => {
   const list = ref([]);
+  const selectedPayments = ref([])
   async function query(id) {
     try { Loading.show();
       const response = await api.get(`/students/${id}/payments`);
@@ -96,6 +97,7 @@ export const usePaymentStore = defineStore("Payments", () => {
   return {
     addStudentPayment,
     set,
+    selectedPayments,
     list,
     query,
     del,

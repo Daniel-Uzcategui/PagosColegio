@@ -5,7 +5,8 @@
         <div class="text-h6 q-my-sm">Filtros:</div>
         <div class="q-gutter-md row items-start">
           <q-input v-model="filters.referencia" label="Referencia de pago" @update:model-value="fetchPayments" debounce="1000" class="col-6" />
-          <q-select v-model="filters.userId" :options="users" option-label="email" option-value="_id" emit-value map-options label="Usuario" @update:model-value="fetchPayments" debounce="1000" class="col-6" />
+          <q-select ref="userSelectOption" v-model="filters.userId" :options="users" option-label="email" option-value="_id" emit-value map-options label="Usuario" @update:model-value="fetchPayments" debounce="1000" class="col-6" />
+          {{ userSelectOption?.ref }}
         </div>
       </q-card-section>
       <q-card-actions align="center" class="q-pt-none">
@@ -14,8 +15,11 @@
       </q-card-actions>
     </q-card>
     <q-btn label="Descargar Excel" icon="sym_o_sheets_rtl" color="accent" @click="downloadExcel" />
+    <q-btn :disable="!studentid || !selected.length" color="primary" icon="check" label="Enviar a Recibo" @click="reciboTemplate" />
     <q-table
     bordered
+      selection="multiple"
+      v-model:selected="selected"
       :rows="payments"
       :columns="columns"
       separator="cell"
@@ -23,6 +27,18 @@
       binary-state-sort
       class="q-mt-md full-width"
     >
+    <template v-slot:header-selection="scope">
+        <q-toggle disable v-model="scope.selected" />
+      </template>
+
+      <template v-slot:body-selection="scope">
+        <q-toggle :disable="scope.row.status === 'reverted'" v-model="scope.selected" />
+      </template>
+    <template v-slot:body-cell="props">
+        <q-td :class="[{'bg-red-5 text-white text-bold': props.row.status === 'reverted'}]" :props="props">
+          {{ props.value }}
+        </q-td>
+    </template>
     <template v-slot:body-cell-cuotasPaidRefs="props">
         <q-td :props="props">
           <q-list separator>
@@ -40,10 +56,26 @@
       <template v-slot:body-cell-Tipo="props">
         <q-td :props="props">
           <q-icon  :name="paymentMethods[props.value].icon" :color="paymentMethods[props.value].color" />
-           {{ props.value }}
         </q-td>
       </template>
+      <template v-slot:body-cell-actions="props">
+      <q-td :props="props">
+        <q-btn v-if="props.row.status !== 'reverted'" flat color="negative" icon="undo" no-caps label="Revertit el pago" @click="openConfirmDialog(props.row)" />
+      </q-td>
+    </template>
+
   </q-table>
+  <q-dialog v-model="showConfirmDialog">
+    <q-card>
+      <q-card-section>
+        <div class="text-h6">¿Estás seguro de que quieres revertir este pago?</div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat label="Cancel" color="primary" v-close-popup />
+        <q-btn flat label="Confirm" color="negative" @click="revertPayment" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
     <q-dialog v-model="showStartDateDialog">
       <q-card>
         <q-date v-model="filters.dateFrom" label="Start Date" @update:model-value="fetchPayments" debounce="1000" />
@@ -65,12 +97,44 @@
 
 
 <script setup>
+
 import { api } from 'src/boot/axios';
 import { onMounted, ref } from 'vue';
 import { format } from 'date-fns';
 import { utils, write } from 'xlsx';
+import { useRouter } from 'vue-router';
+import { usePaymentStore } from 'src/stores/Payments';
+const paymentStore = usePaymentStore()
+const router = useRouter();
+const userSelectOption = ref(null)
+const showConfirmDialog = ref(false);
+const selectedPayment = ref(null);
+const emits = defineEmits(['revert'])
+const selected = ref([])
+function reciboTemplate () {
+  paymentStore.selectedPayments = selected.value
+  router.push({ 
+    name: 'ReceiptTemplate'
+  });
+}
+
+function openConfirmDialog(row) {
+    selectedPayment.value = row;
+    showConfirmDialog.value = true;
+  }
+
+  async function revertPayment() {
+    // Call your API endpoint to revert the payment
+    await api.post('/revert-payment', { paymentId: selectedPayment.value._id });
+    // Refresh the payments data
+    await fetchPayments();
+    // Close the dialog
+    showConfirmDialog.value = false;
+    return emits('revert')
+  }
 const paymentMethods = {
   'Punto de venta': { icon: 'point_of_sale', color: 'blue' },
+  'Credit': { icon: 'point_of_sale', color: 'blue', 'alias': 'Abono anterior' },
   'Efectivo $': { icon: 'attach_money', color: 'green' },
   'Efectivo BS': { icon: 'money', color: 'red' },
   'Zelle': { icon: 'account_balance', color: 'purple' },
@@ -82,10 +146,12 @@ const paymentMethods = {
 const props = defineProps({
   studentid: {
       type: String,
-      required: true
   }
 })
 async function downloadExcel() {
+  let userEmail = getEmail(filters.value)
+  userEmail = userEmail !== '' ? userEmail.split('@')[0] : userEmail
+  console.log({userEmail})
   // Prepare the data for the Excel file
   const data = payments.value.map(payment => ({
     Referencia: payment.Referencia,
@@ -99,9 +165,13 @@ async function downloadExcel() {
     Tipo: payment.Tipo,
     Estudiante: getStudent(payment),
     Cédula: getStudentCed(payment),
+    tipoEstudiante: payment.studentId.help ? 'Ayuda' : 'Regular'
     // Add more fields as needed
   }));
-
+  const totalMontoTotal = payments.value.reduce((accumulator, payment) => accumulator + parseFloat(payment.Monto), 0);
+  const totalMontoTotalBS = payments.value.reduce((accumulator, payment) => accumulator + parseFloat(payment.MontoTotalBS), 0);
+  // Add the total to the data array
+  data.push({ MontoTotal: parseFloat(totalMontoTotal.toFixed(2)), MontoTotalBS: parseFloat(totalMontoTotalBS.toFixed(2)) });
   // Convert the data to a worksheet
   const worksheet = utils.json_to_sheet(data);
 
@@ -121,7 +191,7 @@ async function downloadExcel() {
   // Create a temporary anchor element
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'payments.xlsx';
+  a.download = 'ReporteCaja' + ' '+ userEmail + ' ' + (new Date()).getDate()  + '-'+ ((new Date()).getMonth() + 1) + '-' +  (new Date()).getFullYear() + '.xlsx';
 
   // Append the anchor element to the body
   document.body.appendChild(a);
@@ -154,9 +224,10 @@ if (typeof value !== 'number') return 'NA';
 return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VES' }).format(value);
 };
 const columns = [
+{ name: 'actions', required: true, label: 'Acciones', align: 'left', field: 'actions' },
 { name: 'Referencia', required: true, label: 'Referencia', align: 'left', field: 'Referencia' },
-{ name: 'dateIn', required: true, label: 'Fecha Registro', align: 'left', field: row => formatDateHour(row.dateIn) },
-{ name: 'fechaPago', required: true, label: 'Fecha Pago', align: 'left', field: row => formatDate(row.fechaPago) },
+{ name: 'dateIn',sortable: true, required: true, label: 'Fecha Registro', align: 'left', field: row => formatDateHour(row.dateIn) },
+{ name: 'fechaPago' , required: true, label: 'Fecha Pago', align: 'left', field: row => formatDate(row.fechaPago) },
 { name: 'Monto', required: true, label: 'Monto Total', align: 'left', field: row => formatCurrency(row.Monto) },
 { name: 'MontoTotalBS', required: true, label: 'Monto Total BS', align: 'left', field: row => formatCurrencyBS(row.MontoTotalBS) },
 { name: 'userId', required: true, label: 'Usuario Caja', align: 'left', field: getEmail },

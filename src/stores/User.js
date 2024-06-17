@@ -24,9 +24,10 @@ export const useUsersStore = defineStore("User", () => {
   }
   async function registerUser(form) {
     try {
+      console.log({form});
       let date = new Date();
       const response = await api.post(`/users`, {
-        ...form.value,
+        ...form,
         dateIn: date,
         lastModified: date,
       });
@@ -52,6 +53,7 @@ export const useUsersStore = defineStore("User", () => {
       const response = await api.post('/users/login', { email, password });
       token.value = response.data.token;
       user.value = jwtDecode(token.value);
+      currentUser.value = response.data.user
       api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
       return response.data
     } catch (error) {
@@ -122,6 +124,7 @@ export const useUsersStore = defineStore("User", () => {
     queryUsers,
     list,
     device,
+    user,
     selectedUser,
     currentUser,
     setOther,

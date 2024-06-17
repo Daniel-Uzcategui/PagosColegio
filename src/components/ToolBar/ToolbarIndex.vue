@@ -14,7 +14,7 @@
       flat
       class="row q-pr-md q-pl-md text-accent"
     >
-      <q-btn icon="person" round flat>
+      <q-btn icon="logout" @click="reload()" round flat>
         <!-- <AuthAccountMenu /> -->
       </q-btn>
 
@@ -24,5 +24,7 @@
 </template>
 <script setup>
 // import AuthAccountMenu from "src/auth/components/AccountMenu/AccountMenu.vue";
-;
+function reload () {
+  window.location.reload()
+}
 </script>

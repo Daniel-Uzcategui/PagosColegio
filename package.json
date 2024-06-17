@@ -1,8 +1,8 @@
 {
   "name": "colegio",
   "version": "0.0.1",
-  "description": "Restaurant consulting",
-  "productName": "Restaurant",
+  "description": "Colegio consulting",
+  "productName": "Colegio",
   "author": "Daniel Uzcategui <44720483+Daniel-Uzcategui@users.noreply.github.com>",
   "private": true,
   "scripts": {

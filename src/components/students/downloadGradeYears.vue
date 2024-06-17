@@ -15,7 +15,7 @@ export default {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', 'template.csv');
+            link.setAttribute('download', 'tabla de grados.csv');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

@@ -31,6 +31,20 @@
           </q-list>
         </q-td>
       </template>
+      <template v-slot:body-cell-Monto="prop">
+            <q-td>
+                <q-btn class="full-width" color="primary" icon="payments" :label="prop.row.Monto?.toFixed(2)" @click="Monto=prop.row.Monto; Motivo=''">
+                    <q-tooltip class="bg-white text-primary">Editar Monto Inicial</q-tooltip>
+                    <q-popup-proxy ref="popupProxy" transition-show="scale" transition-hide="scale">
+                        <q-form class="q-ma-md" @submit="updateMonto(prop.row._id, Monto, Motivo)">
+                            <MoneyInput v-model="Monto" ></MoneyInput>
+                            <q-input v-model="Motivo" :rules="[val => val.length > 5]" label="Motivo*" />
+                            <q-btn label="Submit" type="submit" color="primary" />
+                        </q-form>
+                    </q-popup-proxy>
+                </q-btn>
+            </q-td>
+        </template>
       <template v-slot:body-cell-edit="props">
         <q-td class="column items-center">
           <q-btn label="Eliminar" color="negative" icon="delete" @click="deleteCuotaBatch(props.row)" />
@@ -38,7 +52,7 @@
       </template>
     </q-table>
     <q-dialog v-model="addBatchCuotaDialog">
-      <AddBatchCuota :show-dialog="addBatchCuotaDialog" @update:show-dialog="updateAddBatchCuotaDiag" />
+      <AddBatchCuota @show-dialog="updateAddBatchCuotaDiag" />
     </q-dialog>
   </div>
 </template>
@@ -51,7 +65,10 @@ import { useCuotaStore }  from 'stores/Cuotas';
 import { format } from 'date-fns';
 import { api } from 'src/boot/axios';
 import { useQuasar } from 'quasar';
+import MoneyInput from '../moneyInput.vue';
 const $q = useQuasar();
+const Monto = ref(0)
+const Motivo = ref("")
 const cuotaStore = useCuotaStore();
 const addBatchCuotaDialog = ref(false)
 const userMap = ref({})
@@ -78,11 +95,19 @@ function deleteCuotaBatch(cuota){
   })
 
 }
+async function updateMonto(id, Monto, Motivo) {
+  await cuotaStore.updateMontoInCuota({id, Monto, Motivo}).then(() => {
+    $q.notify({message: "Cuota Actualizada para los estudiantes asociados", color: 'positive'})
+    tableRef.value.requestServerInteraction()
+  })
+}
 function updateAddBatchCuotaDiag (value) {
+  console.log('updateadd', value)
   addBatchCuotaDialog.value = value
   if (value === false) {
     cuotaRefEdit.value = cuotaDefault
   }
+  tableRef.value.requestServerInteraction()
 }
 const formatDate = (value) => {
 if (!value) return '';
@@ -90,9 +115,9 @@ return format(new Date(value), 'dd/MM/yyyy');
 };
 const columns = [
   { "name": "Alias", "label": "ALIAS", "field": "Alias", "align": "left", "sortable": true },
-  { "name": "Monto", "label": "MONTO", "field": "Monto", "align": "left", "sortable": true },
+  { "name": "Monto", "label": "MONTO", "field": "Monto", "align": "center", "sortable": true },
   { "name": "Periodo", "label": "PERIODO", "field": "Periodo", "align": "center", "sortable": true },
-  { name: 'userId', required: true, label: 'Usuario Caja', align: 'left', field: getEmail },
+  { name: 'userId', required: true, label: 'Creado por', align: 'left', field: getEmail },
   { name: 'edit', label: 'Eliminar', align: 'center', sortable: false },
 ]
 function getEmail(row) {

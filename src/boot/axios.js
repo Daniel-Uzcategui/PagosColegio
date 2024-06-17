@@ -1,7 +1,8 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 import { Notify } from 'quasar'
-const baseURL = window?.baseUrl || process.env.BASE_URL.toString()
+const baseURL = window.location.protocol + '//' + window.location.hostname + ":3000/" || process.env.BASE_URL.toString()
+console.log({baseURL})
 const api = axios.create({ baseURL})
 console.log('process.env.BASE_URL', baseURL)
 export default boot(({ app, router }) => {

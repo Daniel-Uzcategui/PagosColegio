@@ -71,23 +71,27 @@ const isFormInvalid = computed(() => {
 
 const submitForm = async () => {
     try {
-        const userData = {
-            _id: props.user ? props.user._id : '',
+        let userData = {
+            _id: props.user ? props.user._id : null,
             name: name.value,
             email: email.value,
             password: password.value,
             rol: selectedRoles.value.join('')
         };
+        if (!props.user._id) {
+            delete userData._id;
+        }
         // delete password if string is empty
         if (userData.password === '') {
             delete userData.password;
         }
         
-        if (props.user) {
+        if (props.user._id) {
             // User already exists, perform update
             await userStore.setOther(userData);
         } else {
             // New user, perform registration
+            console.log({ userData });
             await userStore.registerUser(userData);
         }
         return Notify.create({
@@ -161,6 +165,12 @@ const rolesOptions = [
         description: 'Crear múltiples cuotas',
     },
     {
+        path: '/cuotas/:id',
+        methods: 'patch',
+        roles: 'm',
+        description: 'Actualizar Monto de cuotas a todos los estudiantes',
+    },
+    {
         path: '/cuotas',
         methods: 'get',
         roles: 'l',
@@ -188,7 +198,7 @@ const rolesOptions = [
         path: '/students/:id/cuota_payments/:paymentId',
         methods: 'delete',
         roles: 'v',
-        description: 'Eliminar un pago de cuota específico de un estudiante',
+        description: 'Eliminar una cuota específica de un estudiante',
     },
     {
         path: '/cuotas/:id',
@@ -280,5 +290,6 @@ const rolesOptions = [
         roles: 'n',
         description: 'Subir archivo de estudiantes',
     },
+  
 ];
 </script>

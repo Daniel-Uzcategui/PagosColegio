@@ -6,6 +6,7 @@ import { api } from "src/boot/axios";
 
 export const useCuotaStore = defineStore("Cuotas", () => {
   const BCV = ref(0);
+  const bcvSetDate = ref(new Date(2021, 1, 1));
   const list = ref([]);
   const cuotas = ref([]);
   async function getBCV() {
@@ -13,6 +14,9 @@ export const useCuotaStore = defineStore("Cuotas", () => {
       try {
         const response = await api.get("/bcv");
         BCV.value = response.data.rateValue;
+        if (response.data.rateValue) {
+          bcvSetDate.value = new Date();
+        }
         return response.data.rateValue;
       } catch (error) {
         console.error(error);
@@ -32,6 +36,18 @@ async function queryCuotas(id, periodoTo = null, remainingAmountDue = null, peri
       }
     });
     list.value = response.data;
+    return response.data
+  } catch (error) {
+    console.error(error);
+  } finally {
+    Loading.hide();
+  }
+}
+async function getAllQuotas (studentId) {
+  try { 
+    Loading.show();
+    console.log({studentId})
+    const response = await api.get(`/cuotas`, { params: { studentId } });
     return response.data
   } catch (error) {
     console.error(error);
@@ -164,12 +180,31 @@ async function deleteCuotaBatch(cuota){
     }
   }
   
+  async function updateMontoInCuota (payload) {
+    try {
+      Loading.show();
+      const response = await api.patch(`/cuotas/${payload.id}`, {
+        Monto: payload.Monto,
+        Motivo: payload.Motivo
+      });
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    } finally {
+      Loading.hide();
+    }
+  }
   return {
     addStudentCuota,
     deleteCuotaBatch,
     updateMontoIn,
+    updateMontoInCuota,
     set,
+    getAllQuotas,
     list,
+    bcvSetDate,
+    BCV,
     queryCuotas,
     addBatchCuota,
     cuotas,

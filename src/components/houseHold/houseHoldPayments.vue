@@ -1,8 +1,12 @@
 <template>
     <q-dialog :model-value="showDialog" @hide="$emit('update:showDialog', false)" maximized>
       <div class="bg-white">
-      <q-toolbar class="bg-primary">
-          <q-space />
+      <q-toolbar class="bg-primary text-white" :class="[{'bg-green-8': studentRef.help}]">
+        <q-btn flat round dense icon="assignment_ind" />
+        <q-toolbar-title>
+          {{ studentRef.help ? 'Estudiante ayuda' : 'Cuotas del estudiante' }}
+        </q-toolbar-title>
+        <q-space />
             <q-btn flat round dense color="white" icon="close" @click="$emit('update:showDialog', false)" />
           </q-toolbar>
       <q-table
@@ -28,7 +32,7 @@
             </q-btn>
             <q-btn color="secondary" icon="history" label="Abrir tabla de pagos historicos" @click="openPaymentsTable = !openPaymentsTable" />
             <q-btn color="primary" icon="add" label="Agregar cuota" @click="addCuotaDialog = true" />
-            <q-btn color="secondary" icon="add" label="Añadir pago" @click="addPaymentDialog = true" />
+            <q-btn color="secondary" icon="add" label="Añadir pago" @click="selectTypePayment" />
           </q-btn-group>
         </template>
         <template v-slot:body-cell-Monto="prop">
@@ -42,10 +46,13 @@
                 <q-btn class="full-width" color="primary" icon="payments" :label="prop.row.Monto?.toFixed(2)" @click="MontoIn=prop.row.Monto;">
                     <q-tooltip class="bg-white text-primary">Editar Monto Inicial</q-tooltip>
                     <q-popup-proxy ref="popupProxy" transition-show="scale" transition-hide="scale">
-                        <q-form class="q-ma-md" @submit="updateMonto(prop.row._id)">
+                        <q-form class="q-ma-md" @submit="confirmUpdateMonto(prop.row._id)">
                             <q-input v-model.number="MontoIn" label="Monto" type="number" />
                             <q-input v-model="Motivo" label="Motivo" />
-                            <q-btn label="Submit" type="submit" color="primary" />
+                            <div class="row">
+                                <q-btn label="Borrar" @click="MontoIn=0" type="submit" color="red" />
+                                <q-btn label="Guardar" type="submit" color="primary" />
+                              </div>
                         </q-form>
                     </q-popup-proxy>
                 </q-btn>
@@ -59,7 +66,7 @@
         </template>
       </q-table>
       <AddCuotaStudent v-if="addCuotaDialog" :cuotaRef="{}" @updatedOrCreated="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :studentRef="studentRef" v-model="addCuotaDialog" @update:show-dialog="updateAddPaymentDiag" />
-      <AddPayment v-if="addPaymentDialog" @submitted="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :studentRef="studentRef" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" />
+      <AddPayment v-if="addPaymentDialog" @submitted="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotasFiltered" :studentRef="studentRef" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" />
       <AddStudent v-if="addStudentDialog" v-model:show-dialog="addStudentDialog" @submitted="submitted=!submitted; emits('submitted')" :student="studentRefEdit" />
       <!-- openPaymentsTable dialog with historic payments -->
       <q-dialog
@@ -72,7 +79,7 @@
           <q-space />
             <q-btn flat round dense color="white" icon="close" @click="openPaymentsTable = false" />
           </q-toolbar>
-        <ReportCaja :studentid="studentRef._id" />
+        <ReportCaja :studentid="studentRef._id" @revert="queryCuotas(fechaPago);emits('submitted')" />
 
       </div>
       </q-dialog>
@@ -95,9 +102,11 @@ const Motivo = ref('')
 const fechaPago = ref(new Date())
 const cuotaStore  = useCuotaStore()
 const submitted = ref(false)
+const cuotaType = ref(false)
 const studentRefEdit = ref()
 const addStudentDialog = ref(false)
 const addCuotaDialog = ref(false)
+const cuotasFiltered = ref()
 const props = defineProps({
 showDialog: {
 type: Boolean,
@@ -108,6 +117,16 @@ type: Object,
 required: true,
 },
 });
+function confirmUpdateMonto(row) {
+      this.$q.dialog({
+        title: 'Confirmar acción',
+        message: MontoIn.value ? `¿Estás seguro de que quieres editar el monto inicial a ${MontoIn.value}?` : '¿Desea eliminar la cuota?',
+        cancel: true,
+        persistent: true
+      }).onOk(() => {
+        updateMonto(row)
+      })
+    }
 const emits = defineEmits(['update:showDialog', 'submitted'])
 
 // const houseHoldRef = toRef(props, 'houseHold');
@@ -158,7 +177,34 @@ async function updateMonto(cuotaId) {
 async function queryCuotas(date) {
   await cuotaStore.queryCuotas(props.studentRef._id, date, true)
 }
-
+function selectTypePayment () {
+  $q.dialog({
+        title: 'Opciones',
+        message: 'Seleccionar que tipo de cuota a pagar',
+        options: {
+          type: 'radio',
+          model: false,
+          // inline: true
+          items: [
+            { label: 'Cuota Regular', value: false, color: 'secondary' },
+            { label: 'Cuota especial', value: true },
+          ]
+        },
+        cancel: true,
+        persistent: true
+      }).onOk(data => {
+        cuotaType.value = data
+        cuotasFiltered.value = cuotas.value.filter(x => {
+          if (!data && (x.cuotaDefault.type === undefined || x.cuotaDefault.type === false)) {
+            return true
+          }
+          if (data && x.cuotaDefault.type) {
+            return true
+          }
+        })
+        addPaymentDialog.value = true
+      })
+}
 const columns = [
 { type: 'selection', name: 'selected', align: 'center', field: 'selected' },
 { name: 'Alias', label: 'Alias', field: 'Alias', align: 'left', sortable: true },

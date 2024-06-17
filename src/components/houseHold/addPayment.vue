@@ -1,31 +1,39 @@
 <template>
   <q-dialog maximized full-width @update:model-value="emits('update:showDialog')" :model-value="showDialog">
     <q-card>
-      <q-btn class="absolute-top-right" style="z-index: 99999;" dense flat icon="close" @click="emits('update:showDialog', false)">
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
-        </q-btn>
+      <q-toolbar class="bg-primary text-white" :class="[{'bg-green-8': student.help}]" >
+        <q-btn flat round dense icon="assignment_ind" />
+        <q-toolbar-title>
+          {{ student.help ? 'Estudiante ayuda' : 'Añadir pago' }}
+        </q-toolbar-title>
+
+        <q-btn  style="z-index: 99999;" dense flat icon="close" @click="emits('update:showDialog', false)">
+              <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+      </q-toolbar>
+
       <q-card-section>
-        <div class="text-h6">Añadir pago</div>
       {{ student.Nombre }} {{ student.Apellido }}
       {{ student._id }}
+
       </q-card-section>
       <q-card-section>
-        <q-btn @click="overrideBCV" class="full-width" color="primary" icon="payments" no-caps>&nbsp; Tasa 1$ = {{ tasaBCV.rateValue }}Bs
+        <q-btn @click="overrideBCV" class="full-width" color="primary" icon="payments" no-caps>&nbsp; Tasa 1$ = {{ overridenBCV?.rateValue || tasaBCV.rateValue }}Bs
         <q-inner-loading :showing="loadingTasa">
           <q-spinner-gears size="50px" color="primary" />
         </q-inner-loading>
         </q-btn>
         <div v-if="motivoCambio.length" class="bg-red text-white text-h5 text-center">
-          <p class="text-bold">Motivo de cambio de Tasa BCV para revisión:</p>
+          <p class="text-bold">Motivo de cambio de Tasa BCV:</p>
           {{ motivoCambio }}
         </div>
-        <div class="full-width text-center text-bold text-h6"><span v-if="student.credit">Subtotal</span> <span v-else>  Total </span> que se debe: $ {{ totalOwed.toFixed(2) }}</div>
-        <div  v-if="student.credit" class="full-width text-center text-bold text-h6">
-          <div>
-            Abonado anteriormente por el estudiante (Credit): ${{ student.credit }}
+        <div class="full-width text-center text-bold text-h6"><span v-if="credit">Subtotal</span> <span v-else>  Total </span> que se debe: $ {{ totalOwed.toFixed(2) }}</div>
+        <div  v-if="credit" class="full-width text-center text-bold text-h6">
+          <div v-if="credit > 0">
+            Abonado anteriormente por el estudiante (Credit): ${{ credit.toFixed(2) }}
           </div>
-          <div>
-            Total que se debe $ {{ (totalOwed - student.credit) > 0 ? (totalOwed - student.credit).toFixed(2) : 0 }}
+          <div class="bg-red text-white" v-if="credit < 0">
+            El estudiante tiene crédito negativo, resultado de utilizar su crédito y luego revertida la transacción que le abonó el crédito, reversar su transacción de crédito para continuar: ${{ credit.toFixed(2) }}
           </div>
         </div>
         <q-form @submit="submitForm">
@@ -62,15 +70,41 @@
               </template>
             </q-field>
           </div>
-          <q-select v-model="payment.Tipo" :options="options" emit-value label="Tipo" filled />
+          <div class="column">
+            <q-select v-model="payment.Tipo" :options="options" emit-value label="Tipo"  filled />
             <q-date
             title="Fecha de Pago"
             mask="M/D/YYYY"
-              v-model="fechaPago"
-              landscape
+            v-model="fechaPago"
+            landscape
             />
-          <q-input v-model="payment.Referencia" :rules="[(value) => value !== '' || 'Referencia no puede estar vacía']" label="Referencia" type="text" />
-          <q-btn label="Submit" type="submit" color="primary" />
+            <div v-if="inputType && inputType !== 'Otros'">
+                <q-input
+                    v-if="inputType !== 'moneyBills'"
+                    :type="inputType"
+                    v-model="payment.Referencia"
+                    :rules="referenceRules"
+                    label="Referencia"
+                  />
+                  <moneyBills
+                    v-else
+                    v-model="payment.Referencia"
+                    :rules="referenceRules"
+                  />
+            </div>
+            <div v-if="inputType === 'Otros'">
+              <q-input
+                    v-if="inputType !== 'moneyBills'"
+                    type="text"
+                    v-model="payment.Referencia"
+                    :rules="[(value) => (value !== '' && value.length > 6) || 'Referencia no puede estar vacía y ser de 6 caracteres']"
+                    label="Referencia"
+                  />
+            </div>
+            <div class="q-ma-md">
+              <q-btn  label="Guardar" type="submit" color="secondary" />
+            </div>
+          </div>
         </q-form>
       </q-card-section>
     </q-card>
@@ -80,18 +114,36 @@
 <script setup>
 import { ref, onMounted, toRef, computed, watch } from 'vue';
 // import { generateReceiptLines } from './printFunctions.js'
+import moneyBills from 'src/components/payments/moneyBills.vue'
 import { Money3Component } from 'v-money3'
 import { Notify } from 'quasar';
 import { useQuasar } from 'quasar'
 import { useCuotaStore } from 'src/stores/Cuotas';
-import { useUsersStore } from 'src/stores/User'; 
-import axios from 'axios'; // Import axios to make HTTP requests
 import { usePaymentStore } from 'src/stores/Payments';
 import { api } from 'src/boot/axios';
+const credit = ref(0)
 const paymentStore = usePaymentStore();
 const getBCV = useCuotaStore().getBCV
-const userStore = useUsersStore()
+const overridenBCV = ref()
 const $q = useQuasar()
+
+const inputType = computed(() => {
+  if (payment.value.Tipo === 'Zelle') {
+    return 'text';
+  } else if (!['Efectivo $', 'Otros', 'Credit', 'Efectivo BS'].includes(payment.value.Tipo)) {
+    return 'number';
+  } else if (payment.value.Tipo === 'Efectivo $') {
+    return 'moneyBills';
+  } else if (payment.value.Tipo === 'Otros') {
+    return 'Otros';
+  } else {
+    return false
+  }
+});
+
+const referenceRules = computed(() => [
+  (value) => (value !== '' && value.length === 6) || 'Referencia no puede estar vacía y ser de 6 caracteres'
+]);
 const options = [
   { value: 'Punto de venta', label: 'Punto de venta' },
   { value: 'Efectivo $', label: 'Efectivo $' },
@@ -144,8 +196,11 @@ totalOwed.value += cuota.RemainingAmountDue;
 });
 async function submitForm() {
     try {
-      if (tasaBCV.value.gotvalue === false) {
-      throw {message: 'Tasa BCV no cargada porfavor verificar conexión a internet'}
+      if (credit.value < 0) {
+        throw {message: 'El estudiante utilizó crédito asignado a el de una transacción revertida, porfavor revertir su transacción realizada ocn crédito para proceder.'}
+      }
+      if ( (overridenBCV.value?.gotvalue || tasaBCV.value.gotvalue) === false) {
+      throw {message: 'Tasa BCV no cargada porfavor verificar conexión a internet o coloque un valor'}
       }
       // Sort the selected cuotas by their Periodo.from field in ascending order
       if (await isReferenciaNotUnique(payment.value.Referencia)) {
@@ -153,7 +208,7 @@ async function submitForm() {
       }
         // Prepare the data to be sent to the server
         const data = {
-            tasaBCV: tasaBCV.value,
+            tasaBCV: overridenBCV.value || tasaBCV.value,
             payment: payment.value,
             MontoTotal: MontoTotal.value,
             fechaPago: fechaPago.value,
@@ -161,7 +216,6 @@ async function submitForm() {
             selectedCuotas: props.selectedCuotas,
             studentId: student.value._id
         };
-
         // Send a POST request to the server with the data
         const response = await paymentStore.addStudentPayment(student.value._id, data)
         // const response = await api.post('/students/${student.value._id}/payments`, data);
@@ -212,46 +266,55 @@ Notify.create({message:"Falla en conexión con el banco central, verificar conex
 loadingTasa.value = false
 }
 }
-onMounted(()=> {
+onMounted(async ()=> {
 setTasa()
+const res = await api.get('/students/'+ student.value._id)
+credit.value = res.data.credit
 })
 function overrideBCV() {
-$q.dialog({
-prompt: {
-model: '',
-type: 'text',
-isValid: val => val.length > 5 // optional
-},
-cancel: true,
-persistent: true,
-message: "Sobreescribir el valor dólar BCV, porfavor indicar el motivo"
-}).onOk((motivo) => {
-$q.dialog({
-prompt: {
-model: 0,
-type: 'number', // optional
-isValid: val => typeof parseFloat(val) === 'number' && !isNaN(parseFloat(val)),
-},
-cancel: true,
-persistent: true,
-message: "Indicar el valor $ en BS"
-}).onOk((value) => {
-const newValue = parseFloat((parseFloat(value)).toFixed(2))
-motivoCambio.value = motivo
-tasaBCV.value = { rateValue: newValue, currency: 'Bs', gotvalue: true }
-Notify.create({message: `Nuevo Valor asignado al dólar: 1$ = ${newValue} BS`, color: 'orange'})
-})
-})
+    $q.dialog({
+        prompt: {
+            model: '',
+            type: 'text',
+            isValid: val => val.length > 5 // optional
+        },
+        cancel: true,
+        persistent: true,
+        message: "Sobreescribir el valor dólar BCV, porfavor indicar el motivo"
+    }).onOk((motivo) => {
+        $q.dialog({
+            prompt: {
+                model: 0,
+                type: 'number', // optional
+                isValid: val => typeof parseFloat(val) === 'number' && !isNaN(parseFloat(val)),
+            },
+            cancel: true,
+            persistent: true,
+            message: "Indicar el valor $ en BS"
+        }).onOk((value) => {
+            const newValue = parseFloat((parseFloat(value)).toFixed(2))
+            motivoCambio.value = motivo
+            overridenBCV.value = {
+                rateValue: newValue,
+                currency: 'Bs',
+                gotvalue: true
+            }
+            Notify.create({
+                message: `Nuevo Valor asignado al dólar: 1$ = ${newValue} BS`,
+                color: 'orange'
+            })
+        })
+    })
 }
 watch(MontoTotal, (newValue) => {
 if (!reverseBs.value) {
-MontoTotalBS.value = parseFloat((newValue * tasaBCV.value.rateValue).toFixed(2));
+MontoTotalBS.value = parseFloat((newValue * (overridenBCV.value?.rateValue ||tasaBCV.value.rateValue)).toFixed(2));
 }
 });
 
 watch(MontoTotalBS, (newValue) => {
 if (reverseBs.value) {
-MontoTotal.value = parseFloat((newValue / tasaBCV.value.rateValue).toFixed(2));
+  MontoTotal.value = parseFloat((newValue / (overridenBCV.value?.rateValue || tasaBCV.value.rateValue)).toFixed(2));
 }
 });
 </script>

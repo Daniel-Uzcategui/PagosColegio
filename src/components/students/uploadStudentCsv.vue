@@ -23,8 +23,8 @@
                 </template>
             </q-file>
         </q-popup-proxy>
-        <q-dialog v-model="dialogTableStudentUpload">
-            <q-card class="my-card">
+        <q-dialog full-width v-model="dialogTableStudentUpload">
+            <q-card class="full-width">
                 <q-card-section>
                     <q-table
                         :rows="fileData"
@@ -79,16 +79,51 @@ function handleFileUpload(event) {
 async function uploadStudents() {
     try {
         const students = fileData.value;
-        const studentsToUpload = students.map((student) => {
+        let studentsToUpload = students.map((student) => {
+            let cuotas = [];
+                // Iterate over each key-value pair in the student object
+                for (let key in student) {
+                    // Check if the key matches the date format MM/YYYY
+                    // console.log({key})
+                        if (key.split("/").length > 1) {
+                        let date = new Date('01/' + key)
+                        // Transform the key into the desired Alias format
+                        const month = date.getMonth();
+                        const year = date.getFullYear();
+                        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                        const Alias = monthNames[month] + ' ' + year;
+                        console.log({month, year, date})
+                        // Create a cuota object with the specified structure
+                        const cuota = {
+                            Alias,
+                            Monto: parseFloat(student[key]),
+                            Periodo: {
+                                from: new Date(year, month - 1, 1),
+                                to: new Date(year, month, 0),
+                            },
+                            Discount: 1,
+                            totalPaid: 0,
+                            RemainingAmountDue: parseFloat(student[key]),
+                        };
+
+                        // Add the cuota object to the cuotas array
+                        cuotas.push(cuota);
+                    }
+                }
             return {
+                id: student.id || "",
                 Nombre: student.Nombre,
                 Apellido: student.Apellido,
                 ced: parseInt(student.ced),
                 Seccion: student.Seccion,
-                FechaInicioCuota: new Date(student.FechaInicioCuota),
-                Grado: parseInt(student.Grado)
+                FechaInicioCuota: new Date(0),
+                Grado: parseInt(student.Grado),
+                credit: parseFloat(student.credit) || 0,
+                cuotas
             };
         });
+        studentsToUpload = studentsToUpload.filter(student => student.Nombre !== undefined)
+        console.log({studentsToUpload})
         await useStudentStore().uploadStudents(studentsToUpload);
         return Notify.create({ message: 'Estudiantes cargados exitosamente', color: 'green' });
     } catch (error) {

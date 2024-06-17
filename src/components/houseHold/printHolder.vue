@@ -46,9 +46,6 @@ const generateReceiptLines = (groupedPayments, houseHold) => {
       receiptLine += '{w:auto}\n';
       receiptLine += `Estudiante: | "${studentPayments[0].cuotaInfo.student.Nombre}"\n`;
       receiptLine += `Cédula: | "${studentPayments[0].cuotaInfo.student.ced}"\n`;
-      if (studentPayments[0].cuotaInfo.Discount !== 1) {
-          receiptLine += `Ayuda: | ${studentPayments[0].cuotaInfo.Discount * 100}%\n\n`;
-      }
       receiptLine += '|Aportes Realizados ' + studentPayments[0].fechaPago.toDate().toLocaleDateString('es-VE') + '|\n';
       receiptLine += '{w:11,10,11}\n\n';
       receiptLine += '| Cuota | Monto$ | MontoBs |\n';
@@ -74,7 +71,7 @@ const generateReceiptLines = (groupedPayments, houseHold) => {
     receiptLines += receiptLine;
   }
   receiptLines += '{w:auto}\n';
-  receiptLines += `Deuda Restante => | ${houseHold.amountOwed.toFixed(2)}$\n\n`;
+  // receiptLines += `Deuda Restante => | ${houseHold.amountOwed.toFixed(2)}$\n\n`;
   return receiptLines;
 }
 
