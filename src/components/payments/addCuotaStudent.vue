@@ -9,7 +9,7 @@
       @submit="onSubmit"
       class="q-gutter-md column items-center"
       >
-      <q-select clearable style="width: 400px;" v-model="fromCuotaId" option-label="Alias" option-value="_id" emit-value map-options :options="CuotasOption" label="Agregar Cuota existente (OPCIONAL)" filled />
+      <q-select clearable style="width: 400px;" v-model="fromCuotaId" :option-label="(x) => x.Alias + ' ' + x.Monto.toFixed(2) + ' REF'" option-value="_id" emit-value map-options :options="CuotasOption" label="Agregar Cuota existente (OPCIONAL)" filled />
         <q-date
         :disable="typeof fromCuotaId === 'string'"
               v-model="Periodo"

@@ -26,7 +26,7 @@ const emits = defineEmits(['show-dialog'])
         const Monto = ref(0);
         const Periodo = ref({ from: undefined, to: undefined });
         const Grado = ref(100);
-        const grados = ref([{value: 100, label: 'Todos'}, ...yearLabelValue]); // Populate this array with the available grades
+        const grados = ref([{value: 100, label: 'Todos'},{value: 101, label: 'Ninguno'}, ...yearLabelValue]); // Populate this array with the available grades
         const onSubmit = async () => {
             try {
                 /* if cuotaStore.addBatchCuota succesfull close dialog */

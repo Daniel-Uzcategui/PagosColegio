@@ -145,7 +145,8 @@ const referenceRules = computed(() => [
   (value) => (value !== '' && value.length === 6) || 'Referencia no puede estar vacía y ser de 6 caracteres'
 ]);
 const options = [
-  { value: 'Punto de venta', label: 'Punto de venta' },
+  { value: 'Tarjeta Débito', label: 'Tarjeta Débito' },
+  { value: 'Tarjeta Crédito', label: 'Tarjeta Crédito' },
   { value: 'Efectivo $', label: 'Efectivo $' },
   { value: 'Efectivo BS', label: 'Efectivo BS' },
   { value: 'Zelle', label: 'Zelle' },
@@ -183,7 +184,7 @@ const paymentAmounts = ref({});
 const payment = ref({
 fechaPago: new Date().toLocaleDateString('en-US'),
 Referencia: '',
-Tipo: 'Punto de venta'
+Tipo: 'Tarjeta Débito'
 });
 const fechaPago = computed({ get:() => payment.value.fechaPago, set: (e) => {
 payment.value.fechaPago = e}})
@@ -203,7 +204,7 @@ async function submitForm() {
       throw {message: 'Tasa BCV no cargada porfavor verificar conexión a internet o coloque un valor'}
       }
       // Sort the selected cuotas by their Periodo.from field in ascending order
-      if (await isReferenciaNotUnique(payment.value.Referencia)) {
+      if (inputType.value != false && await isReferenciaNotUnique(payment.value.Referencia)) {
       throw {message: 'La referencia ya existe'}
       }
         // Prepare the data to be sent to the server
@@ -227,7 +228,7 @@ async function submitForm() {
             payment.value = {
                 fechaPago: '',
                 Referencia: '',
-                Tipo: 'Punto de venta'
+                Tipo: 'Tarjeta Crédito'
             };
 
             // Emit the submitted event and pass the receipt data

@@ -218,8 +218,8 @@ const addParent = async () => {
       return
     }
     update(() => {
-      const needle = val
-      options.value = parents.value.filter(v => v.ced.indexOf(needle) > -1)
+      const needle = val.toLowerCase()
+      options.value = parents.value.filter(v => v.Apellido.toLowerCase().includes(needle))
     })
   };
   const schoolName = ref('Unidad Educativa Instituto Cecilio Acosta');

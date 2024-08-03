@@ -9,23 +9,25 @@
         <q-card-section>
           <q-form @submit="onSubmit">
             <q-input
-              v-model="Nombre"
-              label="Nombre"
-              filled
-              :rules="[
-                val => (val && val.length > 0) || 'Este campo es obligatorio',
-                val => /^[a-zA-Z\s]*$/.test(val) || 'Este campo solo acepta letras y espacios'
-              ]"
-            />
-            <q-input
-              v-model="Apellido"
-              label="Apellido"
-              filled
-              :rules="[
-                val => (val && val.length > 0) || 'Este campo es obligatorio',
-                val => /^[a-zA-Z\s]*$/.test(val) || 'Este campo solo acepta letras y espacios'
-              ]"
-            />
+  v-model="Nombre"
+  label="Nombre"
+  filled
+  :rules="[
+    val => (val && val.length > 0) || 'Este campo es obligatorio',
+    val => /^[a-zA-Z\u00C0-\u017F\s]*$/.test(val) || 'Este campo solo acepta letras y espacios'
+  ]"
+/>
+
+<q-input
+  v-model="Apellido"
+  label="Apellido"
+  filled
+  :rules="[
+    val => (val && val.length > 0) || 'Este campo es obligatorio',
+    val => /^[a-zA-Z\u00C0-\u017F\s]*$/.test(val) || 'Este campo solo acepta letras y espacios'
+  ]"
+/>
+
             <q-input
               v-model="ced"
               label="Cédula de identidad"

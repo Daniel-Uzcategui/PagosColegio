@@ -118,7 +118,7 @@ required: true,
 },
 });
 function confirmUpdateMonto(row) {
-      this.$q.dialog({
+      $q.dialog({
         title: 'Confirmar acción',
         message: MontoIn.value ? `¿Estás seguro de que quieres editar el monto inicial a ${MontoIn.value}?` : '¿Desea eliminar la cuota?',
         cancel: true,

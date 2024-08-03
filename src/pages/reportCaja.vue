@@ -133,7 +133,9 @@ function openConfirmDialog(row) {
     return emits('revert')
   }
 const paymentMethods = {
+  'Tarjeta Débito': { icon: 'point_of_sale', color: 'blue' },
   'Punto de venta': { icon: 'point_of_sale', color: 'blue' },
+  'Tarjeta Crédito': { icon: 'point_of_sale', color: 'blue' },
   'Credit': { icon: 'point_of_sale', color: 'blue', 'alias': 'Abono anterior' },
   'Efectivo $': { icon: 'attach_money', color: 'green' },
   'Efectivo BS': { icon: 'money', color: 'red' },
@@ -142,7 +144,17 @@ const paymentMethods = {
   'Transferencia': { icon: 'swap_horiz', color: 'yellow' },
   'Otros': { icon: 'more_horiz', color: 'gray' }
 };
-
+const options = {
+  'Tarjeta Débito': 0,
+  'Tarjeta Crédito': 0,
+  'Efectivo $': 0,
+  'Efectivo BS': 0,
+  'Zelle': 0,
+  'Pago Movil': 0,
+  'Transferencia': 0,
+  'Credit': 0,
+  'Otros': 0
+};
 const props = defineProps({
   studentid: {
       type: String,
@@ -151,22 +163,22 @@ const props = defineProps({
 async function downloadExcel() {
   let userEmail = getEmail(filters.value)
   userEmail = userEmail !== '' ? userEmail.split('@')[0] : userEmail
-  console.log({userEmail})
   // Prepare the data for the Excel file
   const data = payments.value.map(payment => ({
-    Referencia: payment.Referencia,
+    tipoEstudiante: payment.studentId.help ? 'Ayuda' : 'Regular',
+    UsuarioCaja: getEmail(payment),
     FechaRegistro: formatDateHour(payment.dateIn),
     FechaPago: formatDate(payment.fechaPago),
-    MontoTotal: formatCurrency(payment.Monto),
+    Referencia: payment.Referencia,
     MontoTotalBS: formatCurrencyBS(payment.MontoTotalBS),
-    UsuarioCaja: getEmail(payment),
-    CuotasPagadas: getCuotas(payment).map(cuota => `${cuota.Alias} - ${formatCurrency(cuota.MontoPaid)}`).join(', '),
-    TasaBCV: formatCurrencyBS(payment.TasaBCV),
     Tipo: payment.Tipo,
+    ...options,
+    [payment.Tipo]: formatCurrency(payment.Monto),
+    ['Tasa BCV']: formatCurrencyBS(payment.TasaBCV),
+    Mensualidad: getCuotas(payment).map(cuota => `${cuota.Alias} - ${formatCurrency(cuota.MontoPaid)}`).join(', '),
     Estudiante: getStudent(payment),
     Cédula: getStudentCed(payment),
-    tipoEstudiante: payment.studentId.help ? 'Ayuda' : 'Regular'
-    // Add more fields as needed
+    MontoTotal: formatCurrency(payment.Monto),
   }));
   const totalMontoTotal = payments.value.reduce((accumulator, payment) => accumulator + parseFloat(payment.Monto), 0);
   const totalMontoTotalBS = payments.value.reduce((accumulator, payment) => accumulator + parseFloat(payment.MontoTotalBS), 0);
@@ -226,8 +238,6 @@ return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VES' }).fo
 const columns = [
 { name: 'actions', required: true, label: 'Acciones', align: 'left', field: 'actions' },
 { name: 'Referencia', required: true, label: 'Referencia', align: 'left', field: 'Referencia' },
-{ name: 'dateIn',sortable: true, required: true, label: 'Fecha Registro', align: 'left', field: row => formatDateHour(row.dateIn) },
-{ name: 'fechaPago' , required: true, label: 'Fecha Pago', align: 'left', field: row => formatDate(row.fechaPago) },
 { name: 'Monto', required: true, label: 'Monto Total', align: 'left', field: row => formatCurrency(row.Monto) },
 { name: 'MontoTotalBS', required: true, label: 'Monto Total BS', align: 'left', field: row => formatCurrencyBS(row.MontoTotalBS) },
 { name: 'userId', required: true, label: 'Usuario Caja', align: 'left', field: getEmail },
@@ -236,6 +246,8 @@ const columns = [
 { name: 'Tipo', required: true, label: 'Tipo de pago', align: 'left', field: 'Tipo' },
 { name: 'studentId', required: true, label: 'Estudiante', align: 'left', field: getStudent },
 { name: 'studentCed', required: true, label: 'Cédula', align: 'left', field: getStudentCed },
+{ name: 'dateIn',sortable: true, required: true, label: 'Fecha Registro', align: 'left', field: row => formatDateHour(row.dateIn) },
+{ name: 'fechaPago' , required: true, label: 'Fecha Pago', align: 'left', field: row => formatDate(row.fechaPago) },
 ]
 const users = ref([])
 const payments = ref([])
@@ -260,6 +272,22 @@ return ""
 function getStudentCed (row) {
 try {
 return row.studentId.ced
+
+} catch (error) {
+return ""
+}
+}
+function getStudentGrado (row) {
+try {
+return row.studentId.Grado
+
+} catch (error) {
+return ""
+}
+}
+function getStudentSeccion (row) {
+try {
+return row.studentId.Seccion
 
 } catch (error) {
 return ""
