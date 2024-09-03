@@ -1,6 +1,6 @@
-# Restaurant (Restaurantdev)
+# Pagos colegio
 
-Restaurant consulting
+Private consulting
 
 ## Install the dependencies
 ```bash
