@@ -17,7 +17,7 @@
     <q-btn label="Descargar Excel" icon="sym_o_sheets_rtl" color="accent" @click="downloadExcel" />
     <q-btn :disable="!studentid || !selected.length" color="primary" icon="check" label="Enviar a Recibo" @click="reciboTemplate" />
     <q-table
-    bordered
+      bordered
       selection="multiple"
       v-model:selected="selected"
       :rows="payments"
@@ -32,7 +32,7 @@
       </template>
 
       <template v-slot:body-selection="scope">
-        <q-toggle :disable="scope.row.status === 'reverted'" v-model="scope.selected" />
+        <q-toggle :disable="scope.row.status === 'reverted' || scope.row.receipt ? true : false" v-model="scope.selected" />
       </template>
     <template v-slot:body-cell="props">
         <q-td :class="[{'bg-red-5 text-white text-bold': props.row.status === 'reverted'}]" :props="props">
@@ -40,27 +40,39 @@
         </q-td>
     </template>
     <template v-slot:body-cell-cuotasPaidRefs="props">
-        <q-td :props="props">
-          <q-list separator>
+        <q-td :props="props" >
+          <q-list style="width: 350px;" separator>
             <q-item>
               <q-item-section>Alias</q-item-section>
               <q-item-section>Monto</q-item-section>
             </q-item>
             <q-item v-for="(i,index) of getCuotas(props.row)" :key="index" clickable v-ripple>
-              <q-item-section>{{i.Alias}}</q-item-section>
-              <q-item-section>{{formatCurrency(i.MontoPaid)}}</q-item-section>
+              <q-item-section style="width: 300px;">{{i.Alias}}</q-item-section>
+              <q-item-section style="width: 30px;">{{formatCurrency(i.MontoPaid, props.row.Tipo ,props.row.TasaBCV)}}</q-item-section>
             </q-item>
           </q-list>
         </q-td>
       </template>
       <template v-slot:body-cell-Tipo="props">
         <q-td :props="props">
+        {{props.value}}
           <q-icon  :name="paymentMethods[props.value].icon" :color="paymentMethods[props.value].color" />
+        </q-td>
+      </template>
+      <template v-slot:body-cell-Recibo="props">
+        <q-td :props="props">
+          <q-btn v-if="props.value" color="primary" @click="reciboTemplate(props.value._id)" :label="props.value.receiptNumber"></q-btn>
+
         </q-td>
       </template>
       <template v-slot:body-cell-actions="props">
       <q-td :props="props">
-        <q-btn v-if="props.row.status !== 'reverted'" flat color="negative" icon="undo" no-caps label="Revertit el pago" @click="openConfirmDialog(props.row)" />
+        <q-input v-if="props.row.Motivo" :model-value="props.row.Motivo" readonly label="Motivo"></q-input>
+        <q-btn v-if="props.row.status !== 'reverted'" :disable="props.row.receipt ? true : false" flat color="negative" icon="undo" no-caps label="Revertit el pago" @click="openConfirmDialog(props.row)">
+          <q-tooltip  v-if="props.row.receipt ? true : false">
+          Para revertir un pago es necesario que se borre el recibo primero
+        </q-tooltip>  
+        </q-btn>
       </q-td>
     </template>
 
@@ -70,9 +82,12 @@
       <q-card-section>
         <div class="text-h6">¿Estás seguro de que quieres revertir este pago?</div>
       </q-card-section>
+      <q-card-section>
+        <q-input v-model="motiv" label="Motivo"></q-input>
+      </q-card-section>
       <q-card-actions align="right">
         <q-btn flat label="Cancel" color="primary" v-close-popup />
-        <q-btn flat label="Confirm" color="negative" @click="revertPayment" />
+        <q-btn flat label="Confirm" :disable="motiv.length < 5" color="negative" @click="revertPayment" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -106,16 +121,20 @@ import { useRouter } from 'vue-router';
 import { usePaymentStore } from 'src/stores/Payments';
 const paymentStore = usePaymentStore()
 const router = useRouter();
+const motiv = ref('')
 const userSelectOption = ref(null)
 const showConfirmDialog = ref(false);
 const selectedPayment = ref(null);
 const emits = defineEmits(['revert'])
 const selected = ref([])
-function reciboTemplate () {
+function reciboTemplate (receipt) {
   paymentStore.selectedPayments = selected.value
-  router.push({ 
-    name: 'ReceiptTemplate'
-  });
+console.log({receipt})
+const send = {
+  name: 'ReceiptTemplate',
+  query: {receipt: receipt || undefined},
+}
+  router.push(send);
 }
 
 function openConfirmDialog(row) {
@@ -125,7 +144,7 @@ function openConfirmDialog(row) {
 
   async function revertPayment() {
     // Call your API endpoint to revert the payment
-    await api.post('/revert-payment', { paymentId: selectedPayment.value._id });
+    await api.post('/revert-payment', { paymentId: selectedPayment.value._id, motivo: motiv.value });
     // Refresh the payments data
     await fetchPayments();
     // Close the dialog
@@ -143,6 +162,18 @@ const paymentMethods = {
   'Pago Movil': { icon: 'phone_android', color: 'orange' },
   'Transferencia': { icon: 'swap_horiz', color: 'yellow' },
   'Otros': { icon: 'more_horiz', color: 'gray' }
+};
+const paymentMethodsCurrency = {
+  'Tarjeta Débito': 'BS',
+  'Punto de venta': 'BS',
+  'Tarjeta Crédito': 'BS',
+  'Credit': '$',
+  'Efectivo $': '$',
+  'Efectivo BS': 'BS',
+  'Zelle': '$',
+  'Pago Movil': 'BS',
+  'Transferencia': 'BS',
+  'Otros': '$'
 };
 const options = {
   'Tarjeta Débito': 0,
@@ -173,7 +204,7 @@ async function downloadExcel() {
     MontoTotalBS: formatCurrencyBS(payment.MontoTotalBS),
     Tipo: payment.Tipo,
     ...options,
-    [payment.Tipo]: formatCurrency(payment.Monto),
+    [payment.Tipo]: formatCurrency(payment.Monto, payment.Tipo, payment.TasaBCV),
     ['Tasa BCV']: formatCurrencyBS(payment.TasaBCV),
     Mensualidad: getCuotas(payment).map(cuota => `${cuota.Alias} - ${formatCurrency(cuota.MontoPaid)}`).join(', '),
     Estudiante: getStudent(payment),
@@ -227,8 +258,11 @@ if (!value) return '';
 return format(new Date(value), 'dd/MM/yyyy HH:mm');
 };
 // Define a filter for currency formatting
-const formatCurrency = (value) => {
+const formatCurrency = (value, Tipo, Tasa) => {
 if (typeof value !== 'number') return 'NA';
+if (paymentMethodsCurrency[Tipo] === 'BS') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VES' }).format(value * Tasa);
+}
 return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 };
 const formatCurrencyBS = (value) => {
@@ -237,6 +271,7 @@ return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VES' }).fo
 };
 const columns = [
 { name: 'actions', required: true, label: 'Acciones', align: 'left', field: 'actions' },
+{ name: 'Recibo', required: true, label: 'Recibo', align: 'center', field:'receipt', sortable: true },
 { name: 'Referencia', required: true, label: 'Referencia', align: 'left', field: 'Referencia' },
 { name: 'Monto', required: true, label: 'Monto Total', align: 'left', field: row => formatCurrency(row.Monto) },
 { name: 'MontoTotalBS', required: true, label: 'Monto Total BS', align: 'left', field: row => formatCurrencyBS(row.MontoTotalBS) },
@@ -248,6 +283,7 @@ const columns = [
 { name: 'studentCed', required: true, label: 'Cédula', align: 'left', field: getStudentCed },
 { name: 'dateIn',sortable: true, required: true, label: 'Fecha Registro', align: 'left', field: row => formatDateHour(row.dateIn) },
 { name: 'fechaPago' , required: true, label: 'Fecha Pago', align: 'left', field: row => formatDate(row.fechaPago) },
+
 ]
 const users = ref([])
 const payments = ref([])

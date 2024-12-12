@@ -171,7 +171,7 @@ const columns = [
 { "name": "Apellido", "label": "APELLIDO", "field": "Apellido", "align": "left", "sortable": true },
 { "name": "ced", "label": "CÉDULA DE IDENTIDAD", "field": "ced", "align": "left", "sortable": true },
 { "name": "Seccion", "label": "Seccion", "field": "Seccion", "align": "left", "sortable": true },
-{ "name": "help", "label": "Tipo", "field": row => row.help ? 'Ayuda' : 'Regular', "align": "left", "sortable": true },
+{ "name": "help", "label": "Tipo", "field": row => row.help ? row.help.name : 'Regular', "align": "left", "sortable": true },
 { "name": "Grado", "label": "GRADO", "field": (row) => yearsByNumber.get(row.Grado), "align": "left", "sortable": true },
 { "name": "amountOwed", "label": "DEUDA", "field": "amountOwed", "align": "left", "sortable": true },
 { name: 'edit', label: 'Edit', align: 'center', sortable: false },

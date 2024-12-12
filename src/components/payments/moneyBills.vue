@@ -47,13 +47,13 @@
   const bills = ref([]);
   
   const billTypes = [
-    { label: '$1', value: '1' },
-    { label: '$2', value: '2' },
-    { label: '$5', value: '5' },
-    { label: '$10', value: '10' },
-    { label: '$20', value: '20' },
-    { label: '$50', value: '50' },
-    { label: '$100', value: '100' }
+    { label: '$1', value: 1 },
+    { label: '$2', value: 2 },
+    { label: '$5', value: 5 },
+    { label: '$10', value: 10 },
+    { label: '$20', value: 20 },
+    { label: '$50', value: 50 },
+    { label: '$100', value: 100 }
   ];
   
   const addBill = () => {
@@ -69,8 +69,11 @@
   const deleteBill = (index) => {
     bills.value.splice(index, 1);
   };
-  const emit = defineEmits(['update:modelValue']);
+  const emit = defineEmits(['update:modelValue', 'newmonto']);
   watch(bills, (newBills) => {
+    const totalAmount = newBills.reduce((sum, bill) => sum + bill.type.value, 0);
+    console.log({totalAmount})
+    emit('newmonto', totalAmount);
     const output = newBills.map(bill => `${bill.type.label} - ${bill.serial}`).join(', ');
     console.log('emitting', bills)
     emit('update:modelValue', output);

@@ -5,7 +5,7 @@
     <q-input style="width: 400px;" v-model="filters.toDate" label="Fecha hasta" type="date" />
     <q-btn label="Descargar XLS" @click="downloadXLS" />
     <q-table
-      title="Reporte General Estudiantes Regulares"
+      title="Reporte General Estudiantes Tipo Ayuda"
       :rows="cuotaPayments"
       :columns="columns"
       :loading="fetching"
@@ -65,7 +65,7 @@ const filters = ref({
   fromDate: null,
   toDate: null,
   paid: false,
-  help: [null]
+  help: ['Ayuda']
 });
 
 const helpLabel = () => {

@@ -38,7 +38,7 @@
         </div>
         <q-form @submit="submitForm">
           <div class="column items-center" :class="[{'reverse': reverseBs}]">
-            <q-field :readonly="reverseBs" filled class="full-width" v-model="MontoTotal" label="Monto de importe en $ Dólares">
+            <q-field :readonly="reverseBs"  filled class="full-width" v-model="MontoTotal" label="Monto de importe en $ Dólares">
                 <template
                 v-slot:control="{ id, floatingLabel, modelValue, emitValue }"
                 >
@@ -54,7 +54,7 @@
               </template>
             </q-field>
               <q-btn color="primary" icon="sync_alt" style="transform: rotate(90deg);" flat @click="reverseBs=!reverseBs" />
-            <q-field :readonly="!reverseBs" class="full-width" filled v-model="MontoTotalBS" label="Monto de importe en BS">
+            <q-field  :readonly="!reverseBs" class="full-width" filled v-model="MontoTotalBS" label="Monto de importe en BS">
                 <template
                 v-slot:control="{ id, floatingLabel, modelValue, emitValue }"
                 >
@@ -86,11 +86,18 @@
                     :rules="referenceRules"
                     label="Referencia"
                   />
-                  <moneyBills
-                    v-else
-                    v-model="payment.Referencia"
-                    :rules="referenceRules"
-                  />
+                  <div v-else>
+                    
+                    <moneyBills
+                      
+                      @newmonto="updateMonTotal"
+                      v-model="payment.Referencia"
+                      :rules="referenceRules"
+                    />
+                    <div v-if="montBill !== MontoTotal">
+                      Monto en billetes es diferente al monto de Pago
+                    </div>
+                  </div>
             </div>
             <div v-if="inputType === 'Otros'">
               <q-input
@@ -126,7 +133,10 @@ const paymentStore = usePaymentStore();
 const getBCV = useCuotaStore().getBCV
 const overridenBCV = ref()
 const $q = useQuasar()
-
+const montBill = ref(0)
+function updateMonTotal(tot) {
+  montBill.value = tot
+}
 const inputType = computed(() => {
   if (payment.value.Tipo === 'Zelle') {
     return 'text';
@@ -191,6 +201,7 @@ payment.value.fechaPago = e}})
 const totalOwed = ref(0);
 const MontoTotalBS = ref(0);
 onMounted(async () => {
+  console.log('Cuotas seleccionadas: ', props.selectedCuotas)
 for (const cuota of props.selectedCuotas) {
 totalOwed.value += cuota.RemainingAmountDue;
 }
@@ -218,6 +229,9 @@ async function submitForm() {
             studentId: student.value._id
         };
         // Send a POST request to the server with the data
+        if (!props.selectedCuotas.length) {
+          throw {message: "Ninguna cuota seleccionada"}
+        }
         const response = await paymentStore.addStudentPayment(student.value._id, data)
         // const response = await api.post('/students/${student.value._id}/payments`, data);
 

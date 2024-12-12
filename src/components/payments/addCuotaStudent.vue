@@ -9,18 +9,18 @@
       @submit="onSubmit"
       class="q-gutter-md column items-center"
       >
-      <q-select clearable style="width: 400px;" v-model="fromCuotaId" :option-label="(x) => x.Alias + ' ' + x.Monto.toFixed(2) + ' REF'" option-value="_id" emit-value map-options :options="CuotasOption" label="Agregar Cuota existente (OPCIONAL)" filled />
+      <q-select multiple clearable @clear="fromCuotaId = []" style="width: 400px;" v-model="fromCuotaId" :option-label="(x) => x.Alias + ' ' + x.Monto.toFixed(2) + ' REF'" option-value="_id" emit-value map-options :options="CuotasOption" label="Agregar Cuota existente (OPCIONAL)" filled />
         <q-date
-        :disable="typeof fromCuotaId === 'string'"
+        :disable="fromCuotaId.length > 0"
               v-model="Periodo"
               mask="MM/DD/YYYY"
               range
               minimal
               :readonly="cuotaRef._id ? true : false"
             />
-            <q-input :disable="typeof fromCuotaId === 'string'" :readonly="cuotaRef._id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
-            <q-toggle :disable="typeof fromCuotaId === 'string'" :readonly="cuotaRef._id ? true : false" v-model="type" color="green" label="Cuota especial" />
-            <Money :disable="typeof fromCuotaId === 'string'" :readonly="cuotaRef._id ? true : false" v-model="Monto" label="Monto"></Money>
+            <q-input :disable="fromCuotaId.length > 0" :readonly="cuotaRef._id ? true : false" v-model="Alias" type="text" label="Alias de la cuota" hint="(El alias ayuda a identificar la cuota(ej: Marzo-Abril))" />
+            <q-toggle :disable="fromCuotaId.length > 0" :readonly="cuotaRef._id ? true : false" v-model="type" color="green" label="Cuota especial" />
+            <Money :disable="fromCuotaId.length > 0" :readonly="cuotaRef._id ? true : false" v-model="Monto" label="Monto"></Money>
             <!-- <q-input :readonly="cuotaRef._id ? true : false" :model-value="Monto" @update:model-value="(e)=> Monto = parseFloat(e) || 0" label="Monto" /> -->
             <div>
             <q-btn v-if="cuotaRef._id ? false : true" class="q-ma-md" label="Guardar" type="submit" color="primary"/>
@@ -37,7 +37,7 @@ import { useCuotaStore } from 'src/stores/Cuotas.js';
 import { useQuasar } from 'quasar'
 import Money from 'components/moneyInput.vue'
 const $q = useQuasar()
-const fromCuotaId = ref()
+const fromCuotaId = ref([]); // Now it's an array to support multiple selection
 const cuotaStore = useCuotaStore()
 const props = defineProps(['modelValue', 'editCuota', 'studentRef', 'houseHold', 'cuotaRef'])
 const cuotaRef = toRef(props, 'cuotaRef')
@@ -66,7 +66,7 @@ function dateFromPeriodo (string) {
 async function onSubmit() {
   try {
     let today = new Date()
-    const isFromCuota = typeof fromCuotaId.value === 'string'
+    const isFromCuota = fromCuotaId.value.length > 0
     if (isFromCuota) {
       await cuotaStore.addStudentCuota({
         fromCuotaId: fromCuotaId.value,

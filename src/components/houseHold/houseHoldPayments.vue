@@ -5,6 +5,7 @@
         <q-btn flat round dense icon="assignment_ind" />
         <q-toolbar-title>
           {{ studentRef.help ? 'Estudiante ayuda' : 'Cuotas del estudiante' }}
+          {{ studentRef.Nombre }} {{ studentRef.Apellido }}
         </q-toolbar-title>
         <q-space />
             <q-btn flat round dense color="white" icon="close" @click="$emit('update:showDialog', false)" />
@@ -43,7 +44,7 @@
         <!-- MontoIn template with proxy popup to edit the amount -->
         <template v-slot:body-cell-MontoIn="prop">
             <q-td>
-                <q-btn class="full-width" color="primary" icon="payments" :label="prop.row.Monto?.toFixed(2)" @click="MontoIn=prop.row.Monto;">
+                <q-btn v-if="!prop.row.RemainingAmountDue < 0.03" :disable="prop.row.RemainingAmountDue < 0.03" class="full-width" color="primary" icon="payments" :label="prop.row.Monto?.toFixed(2)" @click="MontoIn=prop.row.Monto;">
                     <q-tooltip class="bg-white text-primary">Editar Monto Inicial</q-tooltip>
                     <q-popup-proxy ref="popupProxy" transition-show="scale" transition-hide="scale">
                         <q-form class="q-ma-md" @submit="confirmUpdateMonto(prop.row._id)">
@@ -56,6 +57,9 @@
                         </q-form>
                     </q-popup-proxy>
                 </q-btn>
+                <div v-else>
+                  {{ prop.row.Monto?.toFixed(2) }}
+                </div>
             </q-td>
         </template>
 
@@ -65,7 +69,7 @@
             </q-td>
         </template>
       </q-table>
-      <AddCuotaStudent v-if="addCuotaDialog" :cuotaRef="{}" @updatedOrCreated="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotas" :studentRef="studentRef" v-model="addCuotaDialog" @update:show-dialog="updateAddPaymentDiag" />
+      <AddCuotaStudent v-if="addCuotaDialog" :cuotaRef="{}" @updatedOrCreated="submitted=!submitted; emits('submitted'); queryCuotas(fechaPago)" :selectedCuotas="cuotas" :studentRef="studentRef" v-model="addCuotaDialog" @update:show-dialog="updateAddPaymentDiag" />
       <AddPayment v-if="addPaymentDialog" @submitted="submitted=!submitted; emits('submitted')" :selectedCuotas="cuotasFiltered" :studentRef="studentRef" :show-dialog="addPaymentDialog" @update:show-dialog="updateAddPaymentDiag" />
       <AddStudent v-if="addStudentDialog" v-model:show-dialog="addStudentDialog" @submitted="submitted=!submitted; emits('submitted')" :student="studentRefEdit" />
       <!-- openPaymentsTable dialog with historic payments -->
@@ -162,8 +166,17 @@ async function updateMonto(cuotaId) {
       });
     }
   } catch (error) {
-    console.error(error)
-    if(error.message === 'Motivo no puede estar vacío') {
+    console.error({error})
+
+    if(error.response?.data?.message) {
+      $q.notify({
+        message: error.response.data.message,
+        color: 'negative',
+        icon: 'report_problem',
+        position: 'top-right',
+        timeout: 3000
+      });
+    } else if (error.message) {
       $q.notify({
         message: error.message,
         color: 'negative',
@@ -195,7 +208,7 @@ function selectTypePayment () {
       }).onOk(data => {
         cuotaType.value = data
         cuotasFiltered.value = cuotas.value.filter(x => {
-          if (!data && (x.cuotaDefault.type === undefined || x.cuotaDefault.type === false)) {
+          if (!data && (x.cuotaDefault.type === undefined || x.cuotaDefault.type === false || x.cuotaDefault.type === null)) {
             return true
           }
           if (data && x.cuotaDefault.type) {
@@ -208,11 +221,12 @@ function selectTypePayment () {
 const columns = [
 { type: 'selection', name: 'selected', align: 'center', field: 'selected' },
 { name: 'Alias', label: 'Alias', field: 'Alias', align: 'left', sortable: true },
-{ name: 'PeriodoFrom', label: 'Periodo Desde', field: row => toDateLocate(row.Periodo.from), align: 'left', sortable: true },
-{ name: 'PeriodoTo', label: 'Periodo Hasta', field: row => toDateLocate(row.Periodo.to), align: 'left', sortable: true },
+{ name: 'type', label: 'Tipo de Cuota', field: row => row.cuotaDefault?.type ? 'Cuota Especial' : 'Cuota Regular', align: 'left', sortable: true },
+{ name: 'PeriodoFrom', label: 'Periodo Desde', field: row => toDateLocate(row.Periodo?.from), align: 'left', sortable: true },
+{ name: 'PeriodoTo', label: 'Periodo Hasta', field: row => toDateLocate(row.Periodo?.to), align: 'left', sortable: true },
 { name: 'MontoIn', label: 'Monto Inicial', field: 'Monto', align: 'left', sortable: true },
 // define totalPaid
-{ name: 'totalPaid', label: 'Total Pagado', field: 'totalPaid', align: 'left', sortable: true },
+{ name: 'totalPaid', label: 'Total Pagado', field: row => row.totalPaid?.toFixed(2), align: 'left', sortable: true },
 { name: 'Monto', label: 'Monto Restante', field: 'RemainingAmountDue', align: 'left', sortable: true },
 ];
 

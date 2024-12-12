@@ -1,8 +1,12 @@
 <template>
 <q-page padding>
-    <q-btn label="Imprimir" color="red" icon-right="print" @click="printReceipt" />
-    <q-btn label="Impresión térmica" color="red" icon-right="print" @click="sendToPrinter" />
-    <q-btn label="Impresión Probar" color="red" icon-right="print" @click="sendToPrinterTest" />
+  <q-btn-group>
+    <q-btn label="Imprimir" color="primary" icon-right="print" @click="printReceipt" />
+    <q-btn label="Impresión térmica" color="secondary" icon-right="print" @click="sendToPrinter" />
+    <q-btn label="Impresión Probar" color="accent" icon-right="print" @click="sendToPrinterTest" />
+    <q-btn label="Borrar Recibo" v-if="route.query.receipt" color="red" icon-right="delete" @click="borrarRecibo" />
+
+  </q-btn-group>
   <div class="receipt-container">
       <q-card square flat bordered>
         <q-card-section class="row justify-between">
@@ -39,10 +43,11 @@
               class="repbutton q-mb-md"
               label="Seleccionar Representante"
               @filter="filterFn"
+              @update:model-value="(e)=>updateDefaultParent(e)"
             />
             <q-btn color="secondary" v-if="selectedParent" class="repbutton q-mb-md" icon="add" label="Editar representante" @click="addParentDialog = !addParentDialog; isUpdating = true" />
             <q-btn color="primary" v-else class="repbutton q-mb-md" icon="add" label="Añadir representante" @click="addParentDialog = !addParentDialog; isUpdating = false" />
-            <div class="text-left">
+            <div v-if="clientName" class="text-left">
               <div><strong>Nombre y Apellido:</strong> {{ clientName }}</div>
               <q-popup-edit v-model="clientName" v-slot="scope">
                 <q-input v-model="scope.value" dense autofocus counter @keyup.enter="scope.set" />
@@ -93,12 +98,10 @@
             <q-item>
               <q-item-section>Alias</q-item-section>
               <q-item-section>Pago</q-item-section>
-              <q-item-section>Cuota Total</q-item-section>
             </q-item>
             <q-item :class="[{'hidden': !props.row.cuotasPaid[index]}]" v-for="(i,index) in props.value" :key="index" clickable v-ripple>
               <q-item-section >{{i.Alias}}</q-item-section>
               <q-item-section >{{formatCurrency(props.row.cuotasPaid[index])}}</q-item-section>
-              <q-item-section >{{formatCurrency(props.row.cuotasPaidRefs[index].Monto)}}</q-item-section>
             </q-item>
           </q-list>
         </q-td>
@@ -143,9 +146,13 @@
   import {yearsByNumber} from 'src/utils/schoolYear.js'
   import { useUsersStore } from 'src/stores/User';
   import { api } from 'src/boot/axios';
-  import { Notify } from 'quasar';
+  import { Dialog, Notify } from 'quasar';
   import { watch } from 'vue';
-import axios from 'axios';
+  import { debounce } from 'lodash';
+  import axios from 'axios';
+import { useRoute, useRouter } from 'vue-router';
+const router = useRouter();
+  const prop = defineProps(['receipt'])
   const isUpdating = ref(false);
   const addParentDialog = ref(false)
   const selectedParent = ref(null);
@@ -154,30 +161,35 @@ import axios from 'axios';
   const userStore = useUsersStore()
   const paymentStore = usePaymentStore()
   const parentLabel = (parent) => `${parent.Nombre} ${parent.Apellido} ${parent.ced}`;
-  const printReceipt = () => {
-    if (selectedParent.value == null) {
-      Notify.create({message: 'Seleccionar un Representante', color: 'red'})
+  const printReceipt = async () => {
+    if (route.query.receipt === "[object PointerEvent]") {
+      Dialog.create({
+        message: 'Al imprimir se creará el recibo, desea continuar?'
+      }).onOk(async ()=> {
+        await managePrint()
+      })
     } else {
-      window.print();
-
+      await managePrint()
     }
   };
+  async function managePrint () {
+    if (route.query.receipt === "[object PointerEvent]") {
+        const res = await api.post('/receipt/', { payments: paymentStore.selectedPayments, receiptNumber: receiptNumber.value, parent: selectedParent.value._id })
+        if (res) {
+          console.log({res})
+          Notify.create({message: 'Recibo creado', color: 'green'})
+        }
+      }
+      if (selectedParent.value == null) {
+        Notify.create({message: 'Seleccionar un Representante', color: 'red'})
+        window.print();
+      } else {
+        window.print();
+      }
+  }
   const student = ref({})
 
-  onMounted(async () => {
-    student.value = paymentStore.selectedPayments[0].studentId
-    try {
-      const response = await api.get('/parents');
-      parents.value = response.data;
-      if (response.data) {
-        addParentDialog.value = false
-        Notify.create({message: 'Representante agregado', color: 'green'})
-      }
-    } catch (error) {
-      Notify.create({message: 'Error agregando Representate', color: 'red'})
-      console.log(error)
-    }
-  })
+
   const newParent = ref({});
 const addParent = async () => {
   try {
@@ -198,7 +210,13 @@ const addParent = async () => {
   }
 };
 
-
+const updateDefaultParent = async function (parent) {
+  try {
+    const response = await api.post(`/upddefparent/${selectedParent.value._id}/${student.value._id}`)
+  } catch (error) {
+    console.error(error)
+  }
+}
   const columns = [
     { name: 'Referencia', required: true, label: 'Referencia', align: 'left', field: 'Referencia', sortable: true },
     { name: 'TasaBCV', required: true, label: 'BCV', align: 'right', field: 'TasaBCV', sortable: true },
@@ -219,7 +237,11 @@ const addParent = async () => {
     }
     update(() => {
       const needle = val.toLowerCase()
-      options.value = parents.value.filter(v => v.Apellido.toLowerCase().includes(needle))
+      if (!isNaN(val)) {
+        options.value = parents.value.filter(v => v.ced.includes(needle))
+        return
+      }
+      options.value = parents.value.filter(v => v.Apellido?.toLowerCase()?.includes(needle))
     })
   };
   const schoolName = ref('Unidad Educativa Instituto Cecilio Acosta');
@@ -233,9 +255,9 @@ const addParent = async () => {
   const clientEmail = ref('');
   const receiptNumber = ref(generateReceiptNumber());
   const receiptDate = ref((new Date()).toLocaleString());
-  const subtotal = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
-  const totalRef = paymentStore.selectedPayments.reduce((total, payment) => total + payment.Monto, 0);
-  const totalReceipt = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
+  const subtotal = ref(paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0))
+  const totalRef = ref(paymentStore.selectedPayments.reduce((total, payment) => total + payment.Monto, 0))
+  const totalReceipt = ref(paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0))
   const formatCurrency = (value) => {
   if (typeof value !== 'number') return 'NA';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
@@ -261,6 +283,7 @@ watch(selectedParent, (newVal) => {
     newParent.value = newVal
   }
 });
+
 async function sendToPrinter() {
   try {
     const payload = {
@@ -295,6 +318,54 @@ async function sendToPrinterTest() {
   }
 
 
+}
+const route = useRoute()
+onMounted(async () => {
+  try {
+    console.log({ rec: route.query.receipt });
+    const response = await api.get('/parents');
+    parents.value = response.data;
+  if (route.query.receipt !== "[object PointerEvent]") {
+    const res = await api.get('/receipt/' + route.query.receipt);
+    receiptNumber.value = res.data.receiptNumber
+      student.value = res.data.studentId
+      selectedParent.value = parents.value.find(x=> x._id === res.data.parent)
+      console.log({res: res.data.paymentIds})
+      paymentStore.selectedPayments = res.data.paymentIds
+      subtotal.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
+        totalRef.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.Monto, 0);
+        totalReceipt.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
+    return
+  }
+      student.value = paymentStore.selectedPayments[0].studentId
+
+        if (response.data) {
+          addParentDialog.value = false
+          // Notify.create({message: 'Representante agregado', color: 'green'})
+        }
+        if (student.value.Parent !== null) {
+          selectedParent.value = parents.value.find(x=> x._id === student.value.Parent)
+        }
+        subtotal.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
+        totalRef.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.Monto, 0);
+        totalReceipt.value = paymentStore.selectedPayments.reduce((total, payment) => total + payment.MontoTotalBS, 0);
+    } catch (error) {
+      Notify.create({message: 'Error', color: 'red'})
+      console.log(error)
+    }
+  })
+async function borrarRecibo () {
+  Dialog.create({
+    message: 'Desea Eliminar el recibo?'
+  }).onOk(async ()=> {
+    const response = await api.delete('/receipt/' + route.query.receipt)
+    if (response) {
+      Notify.create({
+        message: 'Recibo eliminado'
+      })
+      router.push({ name: 'Students'})
+    }
+  })
 }
 </script>
 <style>

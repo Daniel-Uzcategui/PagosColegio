@@ -1,5 +1,6 @@
 <template>
   <div>
+    Filtrar por Cuotas
     <q-select
       clearable
       style="width: 400px;"
@@ -8,19 +9,22 @@
       option-value="_id"
       emit-value
       map-options
-      :options="CuotasOption"
+      :options="sortedCuotasOption"
       label="Agregar Cuota existente (OPCIONAL)"
       filled
       multiple
     />
-    <q-input style="width: 400px;" v-model="filters.fromDate" label="Fecha de Cuotas" type="date" />
+    <q-input style="width: 400px;" v-model="filters.fromDate" label="Fecha desde" type="date" />
+    <q-input style="width: 400px;" v-model="filters.toDate" label="Fecha hasta" type="date" />
+
     <q-btn label="Descargar XLS" @click="downloadXLS" />
-    <q-toggle v-model="filters.paid" color="green" toggle-indeterminate :label="paidLabel(filters.paid)" />
-    <q-toggle v-model="filters.help" color="orange" toggle-indeterminate :label="helpLabel(filters.help)" />
+    <q-toggle v-model="filters.paid" :disable="fetching" color="green" toggle-indeterminate :label="paidLabel(filters.paid)" />
+    <HelpType multiple v-model:model-value="filters.help"></HelpType>
     <q-table
       :rows="cuotaPayments"
       :columns="columns"
       row-key="id"
+      :loading="fetching"
     >
       <template v-slot:body="props">
         <q-tr :props="props">
@@ -29,32 +33,32 @@
           <q-td key="ced" :props="props">{{ props.row.studentInfo.ced }}</q-td>
           <q-td key="remaining" :props="props">{{ props.row.RemainingAmountDue.toFixed(2) }}</q-td>
           <q-td key="alias" :props="props">{{ props.row.Alias }}</q-td>
-          <q-td key="help" :props="props">{{ props.row.studentInfo.help ? 'Ayuda' : 'Regular' }}</q-td>
+          <q-td key="help" :props="props">{{  translateHelp(props.row.studentInfo.help) }}</q-td>
         </q-tr>
       </template>
-      <template v-slot:bottom>
-        <div>Total de estudiantes filtrados: {{ totalStudents }}</div>
-      </template>
     </q-table>
+    <q-card  class="text-center">
+        <div>Total de estudiantes filtrados: {{ totalStudents }}</div>
+    </q-card>
   </div>
 </template>
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import { api } from "src/boot/axios";
+import HelpType from 'src/components/students/helpType.vue';
 import { useCuotaStore } from "src/stores/Cuotas";
 import * as XLSX from 'xlsx';
 
+const fetching = ref(false)
 const cuotaPayments = ref([]);
 const CuotasOption = ref([]);
-const filters = ref({
-  cuotaIds: [],  // Change to array to support multiple values
-  fromDate: null,
-  paid: false,
-  help: false
+const sortedCuotasOption = computed(() => {
+  return [...CuotasOption.value].sort((a, b) => {
+    const labelA = `${a.Alias} REF ${a.Monto}`.toLowerCase();
+    const labelB = `${b.Alias} REF ${b.Monto}`.toLowerCase();
+    return labelA.localeCompare(labelB);
+  });
 });
-
-const totalStudents = computed(() => cuotaPayments.value.length);
-
 function paidLabel () {
   switch (filters.value.paid) {
     case true:
@@ -65,17 +69,22 @@ function paidLabel () {
       return "Todas las cuotas";
   }
 }
+const helpTypes = ref([]);
+const filters = ref({
+  cuotaIds: [],  // Change to array to support multiple values
+  fromDate: null,
+  paid: false,
+    toDate: null,
+  help: null
+});
 
-function helpLabel () {
-  switch (filters.value.help) {
-    case true:
-      return "Estudiante Ayuda";
-    case false:
-      return "Estudiante Regular";
-    default:
-      return "Todos los estudiantes";
-  }
-}
+// Assuming cuotaPayments is already defined and is a reactive reference
+const totalStudents = computed(() => {
+  const uniqueStudentIds = new Set(cuotaPayments.value.map(payment => payment.studentInfo._id));
+  return uniqueStudentIds.size;
+});
+
+
 
 const columns = [
   { name: 'name', required: true, label: 'Nombre', align: 'left', field: 'name', sortable: true },
@@ -118,18 +127,32 @@ async function downloadXLS() {
 
 async function fetchData() {
   try {
+    fetching.value = true
     const response = await api.post('/report/cuotapayments', { ...filters.value });
     cuotaPayments.value = response.data;
+    return fetching.value = false
   } catch (error) {
     console.error('There was an error fetching the data:', error);
   }
 }
-
+const translateHelp = function (helpId) {
+  return helpTypes.value.find(x => x.value === helpId)?.label || 'Regular'
+}
 onMounted(async () => {
   await fetchData();
   CuotasOption.value = await useCuotaStore().getAllQuotas();
+ await getHelps()
 });
 
+async function getHelps () {
+  try {
+    const response = await api.get('/helps'); // Adjust the path based on your API structure
+    helpTypes.value = response.data.map(help => ({ label: help.name, value: help._id }));
+  } catch (error) {
+    console.error('Error fetching help types:', error);
+    Notify.create({ message: 'Error al cargar tipos de ayuda', color: 'red' });
+  }
+}
 watch(filters, async (newFilters) => {
   await fetchData();
 }, { deep: true });

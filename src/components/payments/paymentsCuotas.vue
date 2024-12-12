@@ -22,15 +22,20 @@
         </q-input>
       </template>
       <template v-slot:body-cell-Periodo="props">
-        <q-td :props="props">
-          <q-list separator>
-            <q-item clickable v-ripple>
-              <q-item-section>{{formatDate(props.value.from)}}</q-item-section>
-              <q-item-section>{{formatDate(props.value.to)}}</q-item-section>
-            </q-item>
-          </q-list>
-        </q-td>
-      </template>
+      <q-td :props="props">
+        <DateRangePicker
+          :model-value="props.row.Periodo"
+          @update:model-value="(newPeriodo) => updatePeriodo(props.row._id, newPeriodo)"
+        />
+      </q-td>
+    </template>
+
+      <template v-slot:body-cell-help="prop">
+            <q-td>
+                <HelpType :model-value="prop.row.help" @update:model-value="(e)=>updateHelp(prop.row._id, e)"></HelpType>
+
+            </q-td>
+        </template>
       <template v-slot:body-cell-Monto="prop">
             <q-td>
                 <q-btn class="full-width" color="primary" icon="payments" :label="prop.row.Monto?.toFixed(2)" @click="Monto=prop.row.Monto; Motivo=''">
@@ -66,6 +71,8 @@ import { format } from 'date-fns';
 import { api } from 'src/boot/axios';
 import { useQuasar } from 'quasar';
 import MoneyInput from '../moneyInput.vue';
+import HelpType from '../students/helpType.vue';
+import DateRangePicker from '../houseHold/dateRangePicker.vue';
 const $q = useQuasar();
 const Monto = ref(0)
 const Motivo = ref("")
@@ -101,6 +108,32 @@ async function updateMonto(id, Monto, Motivo) {
     tableRef.value.requestServerInteraction()
   })
 }
+
+async function updatePeriodo(id, newPeriodo) {
+  try {
+    // Ensure the date strings are properly formatted before sending them to the API
+    const formattedPeriodo = {
+      from: new Date(newPeriodo.from).toISOString().split('T')[0], // Converts to 'YYYY-MM-DD'
+      to: new Date(newPeriodo.to).toISOString().split('T')[0],     // Converts to 'YYYY-MM-DD'
+    };
+
+    // Send the formatted dates to the API
+    const response = await api.patch(`/cuotas/batch/${id}`, { Periodo: formattedPeriodo });
+
+    // Notify success
+    $q.notify({ message: 'Periodo actualizado', color: 'positive' });
+  } catch (error) {
+    // Notify error
+    $q.notify({ message: 'Error updating Periodo', color: 'negative' });
+    console.error(error);
+  }
+}
+
+async function updateHelp (id, help) {
+  const response = await api.patch('/cuotas/batch/' + id, {help})
+      return response.data;
+
+}
 function updateAddBatchCuotaDiag (value) {
   console.log('updateadd', value)
   addBatchCuotaDialog.value = value
@@ -117,6 +150,7 @@ const columns = [
   { "name": "Alias", "label": "ALIAS", "field": "Alias", "align": "left", "sortable": true },
   { "name": "Monto", "label": "MONTO", "field": "Monto", "align": "center", "sortable": true },
   { "name": "Periodo", "label": "PERIODO", "field": "Periodo", "align": "center", "sortable": true },
+  { "name": "help", "label": "Tipo de ayuda", "field": "help", "align": "center", "sortable": true },
   { name: 'userId', required: true, label: 'Creado por', align: 'left', field: getEmail },
   { name: 'edit', label: 'Eliminar', align: 'center', sortable: false },
 ]

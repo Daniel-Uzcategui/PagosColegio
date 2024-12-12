@@ -11,12 +11,16 @@ const routes = [
       //users management tab
       { path: "users", component: () => import("pages/usersView.vue") },
       { path: "logs", component: () => import("pages/logsHistory.vue") },
-      { path: "students", component: () => import("pages/indexPage.vue") },
+      { path: "students",name: 'Students', component: () => import("pages/IndexPage.vue") },
       { path: "login", component: () => import("pages/LoginPage.vue") },
       // add license path
       { path: "license", component: () => import("pages/LicensePage.vue") },
       { path: "reportcaja", component: () => import("pages/reportCaja.vue") },
-      { path: "receipt",name: 'ReceiptTemplate', component: () => import("pages/receiptTemplate.vue"), params: 'payment' },
+      { 
+        path: "receiptpage", 
+        name: 'ReceiptTemplate', 
+        component: () => import("pages/receiptTemplate.vue"),
+      },
       { path: "reportpayments", component: () => import("pages/reportPayments.vue") }
     ],
   },

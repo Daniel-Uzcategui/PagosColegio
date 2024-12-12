@@ -27,3 +27,35 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+dumps/PagosColegio.rar
+dumps/PagosColegio/cuotabatches.bson
+dumps/PagosColegio/cuotabatches.metadata.json
+dumps/PagosColegio/cuotapayments.bson
+dumps/PagosColegio/cuotapayments.metadata.json
+dumps/PagosColegio/helptypes.bson
+dumps/PagosColegio/helptypes.metadata.json
+dumps/PagosColegio/licensekeys.bson
+dumps/PagosColegio/licensekeys.metadata.json
+dumps/PagosColegio/logs.bson
+dumps/PagosColegio/logs.metadata.json
+dumps/PagosColegio/parents.bson
+dumps/PagosColegio/parents.metadata.json
+dumps/PagosColegio/payments.bson
+dumps/PagosColegio/payments.metadata.json
+dumps/PagosColegio/receipts.bson
+dumps/PagosColegio/receipts.metadata.json
+dumps/PagosColegio/schools.bson
+dumps/PagosColegio/schools.metadata.json
+dumps/PagosColegio/students.bson
+dumps/PagosColegio/students.metadata.json
+dumps/PagosColegio/users.bson
+dumps/PagosColegio/users.metadata.json
+dumps/report (5).xlsx
+dumps/report (6).xlsx
+dumps/students/DICIEMBRE.csv
+dumps/students/DICIEMBRE.txt
+dumps/students/NOVIEMBRE.csv
+dumps/students/NOVIEMBRE.txt
+dumps/students/OCTUBRE.csv
+dumps/students/OCTUBRE.txt
+dumps/students/SEPTIEMBRE.txt
